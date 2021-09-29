@@ -1,11 +1,10 @@
-/* global document */
+/* global devicePixelRatio, document */
 /* eslint-disable no-console */
 import React, {PureComponent} from 'react';
 import {render} from 'react-dom';
 import DeckGL from '@deck.gl/react';
 import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
-import {PathLayer} from '@deck.gl/layers';
-import {MVTLoader} from '@loaders.gl/mvt';
+import {GeoJsonLayer, PathLayer} from '@deck.gl/layers';
 
 // Set your mapbox token here
 const MAPBOX_TOKEN = process.env.MapboxAccessToken; // eslint-disable-line
@@ -18,6 +17,9 @@ const INITIAL_VIEW_STATE = {
   zoom: 12
 };
 
+const COUNTRIES =
+  'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson'; //eslint-disable-line
+
 const MVT_URL =
   'https://tiles-a.basemaps.cartocdn.com/vectortiles/carto.streets/v1/{z}/{x}/{y}.mvt';
 
@@ -25,6 +27,7 @@ const MVT_URL =
 const GEOJSON_URL =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_10m_airports.geojson';
 
+const showMVT = false;
 const BORDERS = true;
 
 const MAP_LAYER_STYLES = {
@@ -84,14 +87,26 @@ class Root extends PureComponent {
         controller={true}
         onClick={this._onClick}
         layers={[
-          new MVTLayer({
-            ...MAP_LAYER_STYLES,
-            data: MVT_URL,
-            onClick: this._onClick.bind(this),
-            pickable: true,
-            autoHighlight: true,
-            binary: true
+          new GeoJsonLayer({
+            id: 'base-map',
+            data: COUNTRIES,
+            // Styles
+            stroked: true,
+            filled: true,
+            lineWidthMinPixels: 2,
+            opacity: 0.4,
+            getLineColor: [60, 60, 60],
+            getFillColor: [200, 200, 200]
           }),
+          showMVT &&
+            new MVTLayer({
+              ...MAP_LAYER_STYLES,
+              data: MVT_URL,
+              onClick: this._onClick.bind(this),
+              pickable: true,
+              autoHighlight: true,
+              binary: true
+            }),
           new TileLayer({
             data: GEOJSON_URL,
             autoHighlight: true,
@@ -105,7 +120,36 @@ class Root extends PureComponent {
                 bbox: {west, south, east, north}
               } = props.tile;
 
+              // Fake up some data for now
+              const geojsonData = {
+                type: 'FeatureCollection',
+                features: []
+              };
+              const n = 10;
+              for (let x = west; x < east; x += (east - west) / n) {
+                for (let y = south; y < north; y += (north - south) / n) {
+                  geojsonData.features.push({
+                    type: 'Feature',
+                    properties: {},
+                    geometry: {type: 'Point', coordinates: [x, y]}
+                  });
+                }
+              }
+
               return [
+                new GeoJsonLayer({
+                  id: `${props.id}-geojson`,
+                  data: geojsonData,
+                  // Styles
+                  stroked: true,
+                  filled: true,
+                  pointType: 'circle',
+                  pointRadiusUnits: 'pixels',
+                  lineWidthMinPixels: 1,
+                  getPointRadius: 10,
+                  getLineColor: [0, 0, 200],
+                  getFillColor: [12, 50, 238]
+                }),
                 BORDERS &&
                   new PathLayer({
                     id: `${props.id}-border`,
@@ -114,8 +158,8 @@ class Root extends PureComponent {
                       [[west, north], [west, south], [east, south], [east, north], [west, north]]
                     ],
                     getPath: d => d,
-                    getColor: [255, 0, 0],
-                    widthMinPixels: 4
+                    getColor: [255, 0, 0, 20],
+                    widthMinPixels: 1
                   })
               ];
             }
