@@ -2,11 +2,11 @@
 /* eslint-disable no-console */
 import React, {PureComponent} from 'react';
 import {render} from 'react-dom';
-//import Schema from 'Schema';
+import Tile from './Schema';
 import Protobuf from 'pbf';
 import DeckGL from '@deck.gl/react';
 import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
-import {GeoJsonLayer, PathLayer, ScatterplotLayer} from '@deck.gl/layers';
+import {GeoJsonLayer, PathLayer, PointCloudLayer, ScatterplotLayer} from '@deck.gl/layers';
 import {geojsonToBinary} from '@loaders.gl/gis';
 
 // Set your mapbox token here
@@ -33,10 +33,12 @@ const GEOJSON_URL =
 const POINTS_URL =
   'https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/scatterplot/manhattan.json'; // eslint-disable-line
 
+const SINGLE_TILE_URL = 'http://10.0.30.185:3000/tile';
+
 const showBasemap = true;
 const showMVT = false;
 const showTile = false;
-const showScatter = true;
+const showPointCloud = true;
 const BORDERS = true;
 
 const MAP_LAYER_STYLES = {
@@ -77,7 +79,7 @@ class Root extends PureComponent {
           showBasemap && createBasemap(),
           showMVT && createMVT(),
           showTile && createTile(),
-          showScatter && createScatter()
+          showPointCloud && createPointCloud()
         ]}
       />
     );
@@ -186,18 +188,25 @@ function parseJSON(response) {
 
 function parsePbf(buffer) {
   const pbf = new Protobuf(buffer);
-  const value = Schema.read(pbf);
+  const tile = Tile.read(pbf);
+  const coords = tile.coords;
+  const value = {
+    length: coords.length / 2,
+    attributes: {
+      getPosition: {value: new Float32Array(coords), size: 2}
+    }
+  };
   return value;
 }
 
-function createScatter() {
-  return new ScatterplotLayer({
-    id: 'scatter-plot',
-    data: fetch(POINTS_URL).then(parseJSON),
-    radiusScale: 30,
-    radiusMinPixels: 0.25,
-    getPosition: d => [d[0], d[1], 0],
-    getFillColor: d => (d[2] === 1 ? [0, 128, 255] : [255, 0, 128]),
+function createPointCloud() {
+  return new PointCloudLayer({
+    id: 'point-cloud',
+    data: fetch(SINGLE_TILE_URL)
+      .then(response => response.arrayBuffer())
+      .then(parsePbf),
+    pointSize: 6,
+    getColor: [255, 0, 0],
     getRadius: 1
   });
 }
