@@ -81,6 +81,7 @@ function makeLocalDevConfig(EXAMPLE_DIR = LIB_DIR, linkToLuma, linkToMath) {
 
     // suppress warnings about bundle size
     devServer: {
+      host: '10.0.32.206',
       stats: {
         warnings: false
       }
