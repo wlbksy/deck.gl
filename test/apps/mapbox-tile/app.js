@@ -5,6 +5,7 @@ import {render} from 'react-dom';
 import DeckGL from '@deck.gl/react';
 import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
 import {GeoJsonLayer, PathLayer} from '@deck.gl/layers';
+import {geojsonToBinary} from '@loaders.gl/gis';
 
 // Set your mapbox token here
 const MAPBOX_TOKEN = process.env.MapboxAccessToken; // eslint-disable-line
@@ -136,16 +137,17 @@ class Root extends PureComponent {
                 }
               }
 
+              const binaryData = geojsonToBinary(geojsonData.features);
               return [
                 new GeoJsonLayer({
                   id: `${props.id}-geojson`,
-                  data: geojsonData,
+                  data: binaryData,
                   // Styles
                   stroked: true,
                   filled: true,
                   pointType: 'circle',
                   pointRadiusUnits: 'pixels',
-                  lineWidthMinPixels: 1,
+                  lineWidthMinPixels: 3,
                   getPointRadius: 10,
                   getLineColor: [0, 0, 200],
                   getFillColor: [12, 50, 238]
