@@ -1,7 +1,9 @@
-/* global devicePixelRatio, document */
+/* global devicePixelRatio, document, fetch */
 /* eslint-disable no-console */
 import React, {PureComponent} from 'react';
 import {render} from 'react-dom';
+//import Schema from 'Schema';
+import Protobuf from 'pbf';
 import DeckGL from '@deck.gl/react';
 import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
 import {GeoJsonLayer, PathLayer, ScatterplotLayer} from '@deck.gl/layers';
@@ -177,14 +179,21 @@ function createScatterDefault() {
   });
 }
 
-function parse(response) {
-  return response.json();
+function parseJSON(response) {
+  const value = response.json();
+  return value;
+}
+
+function parsePbf(buffer) {
+  const pbf = new Protobuf(buffer);
+  const value = Schema.read(pbf);
+  return value;
 }
 
 function createScatter() {
   return new ScatterplotLayer({
     id: 'scatter-plot',
-    data: fetch(POINTS_URL).then(parse),
+    data: fetch(POINTS_URL).then(parseJSON),
     radiusScale: 30,
     radiusMinPixels: 0.25,
     getPosition: d => [d[0], d[1], 0],
