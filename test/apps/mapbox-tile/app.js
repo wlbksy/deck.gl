@@ -28,9 +28,13 @@ const MVT_URL =
 const GEOJSON_URL =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_10m_airports.geojson';
 
+const POINTS_URL =
+  'https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/scatterplot/manhattan.json'; // eslint-disable-line
+
 const showBasemap = true;
 const showMVT = false;
 const showTile = false;
+const showScatter = true;
 const BORDERS = true;
 
 const MAP_LAYER_STYLES = {
@@ -67,7 +71,12 @@ class Root extends PureComponent {
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
-        layers={[showBasemap && createBasemap(), showMVT && createMVT(), showTile && createTile()]}
+        layers={[
+          showBasemap && createBasemap(),
+          showMVT && createMVT(),
+          showTile && createTile(),
+          showScatter && createScatter()
+        ]}
       />
     );
   }
@@ -153,6 +162,18 @@ function createBasemap() {
     opacity: 0.4,
     getLineColor: [60, 60, 60],
     getFillColor: [200, 200, 200]
+  });
+}
+
+function createScatter() {
+  return new ScatterplotLayer({
+    id: 'scatter-plot',
+    data: POINTS_URL,
+    radiusScale: 30,
+    radiusMinPixels: 0.25,
+    getPosition: d => [d[0], d[1], 0],
+    getFillColor: d => (d[2] === 1 ? [0, 128, 255] : [255, 0, 128]),
+    getRadius: 1
   });
 }
 
