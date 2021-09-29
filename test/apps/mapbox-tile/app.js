@@ -13,9 +13,9 @@ const MAPBOX_TOKEN = process.env.MapboxAccessToken; // eslint-disable-line
 const INITIAL_VIEW_STATE = {
   bearing: 0,
   pitch: 0,
-  longitude: -122.45,
-  latitude: 37.78,
-  zoom: 12
+  longitude: -73.986022,
+  latitude: 40.730743,
+  zoom: 10
 };
 
 const COUNTRIES =
@@ -165,10 +165,26 @@ function createBasemap() {
   });
 }
 
-function createScatter() {
+function createScatterDefault() {
   return new ScatterplotLayer({
     id: 'scatter-plot',
     data: POINTS_URL,
+    radiusScale: 30,
+    radiusMinPixels: 0.25,
+    getPosition: d => [d[0], d[1], 0],
+    getFillColor: d => (d[2] === 1 ? [0, 128, 255] : [255, 0, 128]),
+    getRadius: 1
+  });
+}
+
+function parse(response) {
+  return response.json();
+}
+
+function createScatter() {
+  return new ScatterplotLayer({
+    id: 'scatter-plot',
+    data: fetch(POINTS_URL).then(parse),
     radiusScale: 30,
     radiusMinPixels: 0.25,
     getPosition: d => [d[0], d[1], 0],
