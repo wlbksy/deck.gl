@@ -104,13 +104,18 @@ function createMVT() {
   });
 }
 
-function tileToBinary(tile) {
-  const coordLength = 2;
-  const il = tile.coords.length;
-  const ids = new Uint16Array(tile.coords.length);
-  for (let i = 0; i < il; i++) {
+const coordLength = 2;
+function generatePointIndices(coords) {
+  const n = coords.length / coordLength;
+  const ids = new Uint16Array(n);
+  for (let i = 0; i < n; i++) {
     ids[i] = coordLength * i;
   }
+  return ids;
+}
+
+function tileToBinary(tile) {
+  const ids = generatePointIndices(tile.coords);
   const value = {
     points: {
       positions: {value: new Float32Array(tile.coords), size: coordLength},
