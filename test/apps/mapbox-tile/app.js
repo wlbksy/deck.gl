@@ -1,4 +1,4 @@
-/* global devicePixelRatio, document, fetch */
+/* global devicePixelRatio, document, fetch, performance */
 /* eslint-disable no-console */
 import React, {PureComponent} from 'react';
 import {render} from 'react-dom';
@@ -41,13 +41,16 @@ const ALBERTO = true;
 const ALBERTO_URL =
   'http://10.0.32.237:8002/v3/maps/bq-bi-engine/table/{z}/{x}/{y}?mapId=cartobq._d296517907c39746c3a5652253a82ad3ee035be5.anon3c8918185b69854ef19bcfcd5afc498070e2dfbc&format=geojson&access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJYVnRIYUdzaTUxMFZZYml1YjA5ZCJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFsYmVydG9AY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfbWs3bXV6Z3UiLCJpc3MiOiJodHRwczovL2F1dGgubG9jYWwuY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA4NDA5NTYzMzQxMzU5MDQxNjg0IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTYzMjkxMjIzNCwiZXhwIjoxNjMyOTk4NjM0LCJhenAiOiJGM2tKOVJoUWhFTUFodDFRQllkQUluckRRTXJKVlI4dSIsInNjb3BlIjoicmVhZDpjdXJyZW50X3VzZXIiLCJwZXJtaXNzaW9ucyI6WyJhZG1pbjphY2NvdW50IiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bGlzdGVkX2FwcHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIl19.SPs4WJHjwa8X8Nz8-4noZU2xQmZ8N52XZh3Gmea18-aCBQBUh9BML8WcpBYDD_LU9a02V2uG8Xp4otnkz-C1gA7idMmynthQAYSeRQWslImbjR5BwYW7l6XMTJ3fF2a2MRC6gQCtgfN45OYagvzNNBcQEn6Fffcs79BUkQsdhRctFp5AN1SU7ixevly24_BJM56vX0ihCstFhaoQiDQCX7R7MHNLFIk1RXb2xDC-3inhUzw94wetPHcQNBr5MiLQfNmJYVq_oemU7bVGsT2iIvZIghhypBy__eA_z0uwtiEAekC_01JQ-9v1_TjewmLs30qzyfNonKX32nVcjKiJuw';
 const ALBERTO_URL2 =
-  'http://10.0.32.237:8002/v3/maps/bq-bi-engine/table/{z}/{x}/{y}?format=geojson&geomType=lines&name=cartobq.testtables.lines&access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJYVnRIYUdzaTUxMFZZYml1YjA5ZCJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFsYmVydG9AY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfbWs3bXV6Z3UiLCJpc3MiOiJodHRwczovL2F1dGgubG9jYWwuY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA4NDA5NTYzMzQxMzU5MDQxNjg0IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTYzMjkxMjIzNCwiZXhwIjoxNjMyOTk4NjM0LCJhenAiOiJGM2tKOVJoUWhFTUFodDFRQllkQUluckRRTXJKVlI4dSIsInNjb3BlIjoicmVhZDpjdXJyZW50X3VzZXIiLCJwZXJtaXNzaW9ucyI6WyJhZG1pbjphY2NvdW50IiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bGlzdGVkX2FwcHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIl19.SPs4WJHjwa8X8Nz8-4noZU2xQmZ8N52XZh3Gmea18-aCBQBUh9BML8WcpBYDD_LU9a02V2uG8Xp4otnkz-C1gA7idMmynthQAYSeRQWslImbjR5BwYW7l6XMTJ3fF2a2MRC6gQCtgfN45OYagvzNNBcQEn6Fffcs79BUkQsdhRctFp5AN1SU7ixevly24_BJM56vX0ihCstFhaoQiDQCX7R7MHNLFIk1RXb2xDC-3inhUzw94wetPHcQNBr5MiLQfNmJYVq_oemU7bVGsT2iIvZIghhypBy__eA_z0uwtiEAekC_01JQ-9v1_TjewmLs30qzyfNonKX32nVcjKiJuw';
+  'http://192.168.201.233:8002/v3/maps/bq-bi-engine/table/{z}/{x}/{y}?format=geojson&geomType=lines&name=cartobq.testtables.lines&access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJYVnRIYUdzaTUxMFZZYml1YjA5ZCJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFsYmVydG9AY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfbWs3bXV6Z3UiLCJpc3MiOiJodHRwczovL2F1dGgubG9jYWwuY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA4NDA5NTYzMzQxMzU5MDQxNjg0IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTYzMzAwMjg4NCwiZXhwIjoxNjMzMDg5Mjg0LCJhenAiOiJGM2tKOVJoUWhFTUFodDFRQllkQUluckRRTXJKVlI4dSIsInNjb3BlIjoicmVhZDpjdXJyZW50X3VzZXIiLCJwZXJtaXNzaW9ucyI6WyJhZG1pbjphY2NvdW50IiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bGlzdGVkX2FwcHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIl19.ADe3FzhaqNcNAXmOgb4dvhXfOv27V2hVPAp2EXWdIuwBpEnanc8OhbTka4SmTXSVtTjyrOE0HECRRfpSi0_TeM9fXkHfIRM0MO5e_gUd0xN1-3I6_3dZadJFihquFQIqPECp9VzYMHD5N9k3z9uIscD4tFI7CmveQqvqFzFOMeKQ4uprSY3z3uTh3q5Nflk0_4sQ2kDKwaURdUsPKg0OqoJoUzKoA_vVD1JH82KX-R4LYWPlcMAjyTGIFHd8aO4nUiv6TASH_DNXhcHcMCYX6d4YgEQSnCtaoBUMS9xkOoM-LumWer0kAF8-5VsFpZmDZTCivFwjZS7IX5s7fkPyPQ';
+const ANTONIO_GEOJSON_URL =
+  'http://192.168.201.20:8002/v3/maps/dev-bigquery/table?name=cartobq.testtables.polygons_10k&format=geojson&access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJYVnRIYUdzaTUxMFZZYml1YjA5ZCJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFjb3J0ZXNAY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfZGEwdmpmZyIsImlzcyI6Imh0dHBzOi8vYXV0aC5sb2NhbC5jYXJ0by5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDMyMzk1MzA1MDY5OTQ5NTM3NzUiLCJhdWQiOiJjYXJ0by1jbG91ZC1uYXRpdmUtYXBpIiwiaWF0IjoxNjMzMDExODg4LCJleHAiOjE2MzMwOTgyODgsImF6cCI6IkYza0o5UmhRaEVNQWh0MVFCWWRBSW5yRFFNckpWUjh1Iiwic2NvcGUiOiJyZWFkOmN1cnJlbnRfdXNlciIsInBlcm1pc3Npb25zIjpbImFkbWluOmFjY291bnQiLCJyZWFkOmFjY291bnQiLCJyZWFkOmFwcHMiLCJyZWFkOmNvbm5lY3Rpb25zIiwicmVhZDpjdXJyZW50X3VzZXIiLCJyZWFkOmltcG9ydHMiLCJyZWFkOmxpc3RlZF9hcHBzIiwicmVhZDptYXBzIiwicmVhZDp0aWxlc2V0cyIsInJlYWQ6dG9rZW5zIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTpsaXN0ZWRfYXBwcyIsIndyaXRlOm1hcHMiLCJ3cml0ZTp0b2tlbnMiXX0.lPOSAOqhjH4cjjy0E1jfRyZ8SnQ-axvt9YBkCVoxU6YsR-N4lcCFFU82Qy1bVJbRlukjSdEEmtGJwTEWrUTjiWGBWZPKQrMh5aGLa56k-c-qe4mZpmijnuxbPNzMQHXiob-h2L2i47a62Udnio5f6zp88cnb3NIoR_QpkhSlx3lEaatUUUjG6s7EgF6Ay6jAcmryGgEktrY1qShB7BoM7_-xQ71RU7zqcCk7puwWCG1Nz-WoQeWnRBjVvYyFR69DpqYVBrFMO-S0QlbaO1nfVi_lPvzd5t2thWOP7QNz9AFUhgBAN4N5BSnXZ1UoSUWIzJOG3dccrbyCke9RZLhoWg';
 const ANTONIO_URL =
-  'http://10.0.32.226:8002/v3/maps/dev-bigquery/table/{z}/{x}/{y}?mapId=cartodb-gcp-backend-data-team._d296517907c39746c3a5652253a82ad3ee035be5.anon3c8918185b69854ef19bcfcd5afc498070e2dfbc&format=geojson&access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJYVnRIYUdzaTUxMFZZYml1YjA5ZCJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFjb3J0ZXNAY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfZGEwdmpmZyIsImlzcyI6Imh0dHBzOi8vYXV0aC5sb2NhbC5jYXJ0by5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDMyMzk1MzA1MDY5OTQ5NTM3NzUiLCJhdWQiOiJjYXJ0by1jbG91ZC1uYXRpdmUtYXBpIiwiaWF0IjoxNjMyOTI0OTM4LCJleHAiOjE2MzMwMTEzMzgsImF6cCI6IkYza0o5UmhRaEVNQWh0MVFCWWRBSW5yRFFNckpWUjh1Iiwic2NvcGUiOiJyZWFkOmN1cnJlbnRfdXNlciIsInBlcm1pc3Npb25zIjpbImFkbWluOmFjY291bnQiLCJyZWFkOmFjY291bnQiLCJyZWFkOmFwcHMiLCJyZWFkOmNvbm5lY3Rpb25zIiwicmVhZDpjdXJyZW50X3VzZXIiLCJyZWFkOmltcG9ydHMiLCJyZWFkOmxpc3RlZF9hcHBzIiwicmVhZDptYXBzIiwicmVhZDp0aWxlc2V0cyIsInJlYWQ6dG9rZW5zIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTpsaXN0ZWRfYXBwcyIsIndyaXRlOm1hcHMiLCJ3cml0ZTp0b2tlbnMiXX0.RhMht6LutV9NjEvgfyVvLMN-avUvJYowLyozMSGbjyZe59JRzd51Fv5U3W45qHIXQhMv8wj86sTDX6zsH0uMy3NOg6UsTClqwKIRNutkmQqTkNA2gJ1Qk6Dkc_Yj08RsW6jTyQhBZVTw5T6wZutmm3LcLlLHb9dMX0TrfRwblD3f-YHMxF8UVL-O8WUV9VI3rE5cwmYeP1qbGNrVkxjG3pquHXzTo_b8CrDVGbbGlVyh9M30YAYjC0rHGaPWaCqEtu6eRJPvClHqbD5qQQinCEMzS4PDh5_pyMtC1XX3gclV1mb4rlnWE7YWoywyEp4szy1__fz8tRXQp0K32VS6Ng';
+  'http://192.168.201.20:8002/v3/maps/dev-bigquery/table/{z}/{x}/{y}?mapId=cartodb-gcp-backend-data-team._d296517907c39746c3a5652253a82ad3ee035be5.anon3c8918185b69854ef19bcfcd5afc498070e2dfbc&format=geojson&access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJYVnRIYUdzaTUxMFZZYml1YjA5ZCJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFjb3J0ZXNAY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfZGEwdmpmZyIsImlzcyI6Imh0dHBzOi8vYXV0aC5sb2NhbC5jYXJ0by5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMDMyMzk1MzA1MDY5OTQ5NTM3NzUiLCJhdWQiOiJjYXJ0by1jbG91ZC1uYXRpdmUtYXBpIiwiaWF0IjoxNjMyOTI0OTM4LCJleHAiOjE2MzMwMTEzMzgsImF6cCI6IkYza0o5UmhRaEVNQWh0MVFCWWRBSW5yRFFNckpWUjh1Iiwic2NvcGUiOiJyZWFkOmN1cnJlbnRfdXNlciIsInBlcm1pc3Npb25zIjpbImFkbWluOmFjY291bnQiLCJyZWFkOmFjY291bnQiLCJyZWFkOmFwcHMiLCJyZWFkOmNvbm5lY3Rpb25zIiwicmVhZDpjdXJyZW50X3VzZXIiLCJyZWFkOmltcG9ydHMiLCJyZWFkOmxpc3RlZF9hcHBzIiwicmVhZDptYXBzIiwicmVhZDp0aWxlc2V0cyIsInJlYWQ6dG9rZW5zIiwidXBkYXRlOmN1cnJlbnRfdXNlciIsIndyaXRlOmFwcHMiLCJ3cml0ZTpjb25uZWN0aW9ucyIsIndyaXRlOmltcG9ydHMiLCJ3cml0ZTpsaXN0ZWRfYXBwcyIsIndyaXRlOm1hcHMiLCJ3cml0ZTp0b2tlbnMiXX0.RhMht6LutV9NjEvgfyVvLMN-avUvJYowLyozMSGbjyZe59JRzd51Fv5U3W45qHIXQhMv8wj86sTDX6zsH0uMy3NOg6UsTClqwKIRNutkmQqTkNA2gJ1Qk6Dkc_Yj08RsW6jTyQhBZVTw5T6wZutmm3LcLlLHb9dMX0TrfRwblD3f-YHMxF8UVL-O8WUV9VI3rE5cwmYeP1qbGNrVkxjG3pquHXzTo_b8CrDVGbbGlVyh9M30YAYjC0rHGaPWaCqEtu6eRJPvClHqbD5qQQinCEMzS4PDh5_pyMtC1XX3gclV1mb4rlnWE7YWoywyEp4szy1__fz8tRXQp0K32VS6Ng';
 
 const showBasemap = true;
+const showGeoJson = true;
 const showMVT = false;
-const showTile = true;
+const showTile = false;
 const showPointCloud = false;
 const BORDERS = true;
 
@@ -85,8 +88,10 @@ class Root extends PureComponent {
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
+        onAfterRender={onAfterRender}
         layers={[
           showBasemap && createBasemap(),
+          showGeoJson && createGeoJson(),
           showMVT && createMVT(),
           showTile && createTile(),
           showPointCloud && createPointCloud()
@@ -123,6 +128,13 @@ function tileToBinary(tile) {
   let linesPathIndices = (tile && tile.pathIndices) || [];
 
   const linesIds = [...linesPathIndices];
+  if (linesPathIndices.length > 0) {
+    // Correct index to be per-vertex
+    linesPathIndices = linesPathIndices.map(i => i / 2);
+
+    // Add in final vertex
+    linesPathIndices.push(linesPositions.length / 2);
+  }
   const value = {
     points: {
       positions: {value: new Float32Array(pointPositions), size: coordLength},
@@ -179,7 +191,6 @@ function createTile() {
         ? tileToBinary(props.data)
         : geojsonToBinary(props.data.features);
       const geojson = binaryToGeojson(binaryData);
-      //const binary2 =
       return [
         new GeoJsonLayer({
           id: `${props.id}-geojson`,
@@ -226,6 +237,37 @@ function createBasemap() {
     getLineColor: [60, 60, 60],
     getFillColor: [200, 200, 200]
   });
+}
+
+let startTime;
+let geoJsonLayer;
+function onAfterRender() {
+  if (geoJsonLayer && geoJsonLayer.isLoaded) {
+    const delta = performance.now() - startTime;
+    geoJsonLayer = null;
+    console.log(delta);
+  }
+}
+
+function createGeoJson() {
+  geoJsonLayer = new GeoJsonLayer({
+    id: 'geojson',
+    data: fetch(ANTONIO_GEOJSON_URL)
+      .then(response => response.json())
+      .then(data => {
+        startTime = performance.now();
+        return data;
+      }),
+    // Styles
+    stroked: true,
+    filled: true,
+    lineWidthMinPixels: 2,
+    opacity: 0.4,
+    getLineColor: [60, 60, 60],
+    getFillColor: [0, 0, 200]
+  });
+
+  return geoJsonLayer;
 }
 
 function createScatterDefault() {
