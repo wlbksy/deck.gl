@@ -2,7 +2,7 @@
 /* eslint-disable no-console */
 import React, {PureComponent} from 'react';
 import {render} from 'react-dom';
-import Tile from './Lines';
+import Tile from './Polygons';
 import Protobuf from 'pbf';
 import DeckGL from '@deck.gl/react';
 import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
@@ -35,14 +35,13 @@ const POINTS_URL =
 
 const SINGLE_TILE_URL = 'http://10.0.32.13:3000/tile';
 
-const USE_BINARY = false;
-
 const ALBERTO = true;
 const ALBERTO_URL =
   'http://10.0.32.237:8002/v3/maps/bq-bi-engine/table/{z}/{x}/{y}?mapId=cartobq._d296517907c39746c3a5652253a82ad3ee035be5.anon3c8918185b69854ef19bcfcd5afc498070e2dfbc&format=geojson&access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJYVnRIYUdzaTUxMFZZYml1YjA5ZCJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFsYmVydG9AY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfbWs3bXV6Z3UiLCJpc3MiOiJodHRwczovL2F1dGgubG9jYWwuY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA4NDA5NTYzMzQxMzU5MDQxNjg0IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTYzMjkxMjIzNCwiZXhwIjoxNjMyOTk4NjM0LCJhenAiOiJGM2tKOVJoUWhFTUFodDFRQllkQUluckRRTXJKVlI4dSIsInNjb3BlIjoicmVhZDpjdXJyZW50X3VzZXIiLCJwZXJtaXNzaW9ucyI6WyJhZG1pbjphY2NvdW50IiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bGlzdGVkX2FwcHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIl19.SPs4WJHjwa8X8Nz8-4noZU2xQmZ8N52XZh3Gmea18-aCBQBUh9BML8WcpBYDD_LU9a02V2uG8Xp4otnkz-C1gA7idMmynthQAYSeRQWslImbjR5BwYW7l6XMTJ3fF2a2MRC6gQCtgfN45OYagvzNNBcQEn6Fffcs79BUkQsdhRctFp5AN1SU7ixevly24_BJM56vX0ihCstFhaoQiDQCX7R7MHNLFIk1RXb2xDC-3inhUzw94wetPHcQNBr5MiLQfNmJYVq_oemU7bVGsT2iIvZIghhypBy__eA_z0uwtiEAekC_01JQ-9v1_TjewmLs30qzyfNonKX32nVcjKiJuw';
 
+const USE_BINARY = false;
 const table = 'cartobq.testtables.polygons_10k';
-const format = 'geojson';
+const format = USE_BINARY ? 'cvt' : 'geojson';
 const geomType = 'polygons';
 const ALBERTO_URL2 = `http://192.168.201.233:8002/v3/maps/bq-bi-engine/table/{z}/{x}/{y}?format=${format}&geomType=${geomType}&name=${table}&access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJYVnRIYUdzaTUxMFZZYml1YjA5ZCJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFsYmVydG9AY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfbWs3bXV6Z3UiLCJpc3MiOiJodHRwczovL2F1dGgubG9jYWwuY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA4NDA5NTYzMzQxMzU5MDQxNjg0IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTYzMzAwMjg4NCwiZXhwIjoxNjMzMDg5Mjg0LCJhenAiOiJGM2tKOVJoUWhFTUFodDFRQllkQUluckRRTXJKVlI4dSIsInNjb3BlIjoicmVhZDpjdXJyZW50X3VzZXIiLCJwZXJtaXNzaW9ucyI6WyJhZG1pbjphY2NvdW50IiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bGlzdGVkX2FwcHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIl19.ADe3FzhaqNcNAXmOgb4dvhXfOv27V2hVPAp2EXWdIuwBpEnanc8OhbTka4SmTXSVtTjyrOE0HECRRfpSi0_TeM9fXkHfIRM0MO5e_gUd0xN1-3I6_3dZadJFihquFQIqPECp9VzYMHD5N9k3z9uIscD4tFI7CmveQqvqFzFOMeKQ4uprSY3z3uTh3q5Nflk0_4sQ2kDKwaURdUsPKg0OqoJoUzKoA_vVD1JH82KX-R4LYWPlcMAjyTGIFHd8aO4nUiv6TASH_DNXhcHcMCYX6d4YgEQSnCtaoBUMS9xkOoM-LumWer0kAF8-5VsFpZmDZTCivFwjZS7IX5s7fkPyPQ`;
 
@@ -184,9 +183,21 @@ function createTile() {
     tileSize: 256,
     zoomOffset: devicePixelRatio === 1 ? -1 : 0,
     getTileData: tile => {
-      return fetch(tile.url).then(response => response.json());
-      //.then(response => response.arrayBuffer())
-      //.then(parsePbf);
+      return USE_BINARY
+        ? fetch(tile.url)
+            .then(response => {
+              if (response.status === 204) {
+                return null;
+              }
+              return response.arrayBuffer();
+            })
+            .then(parsePbf)
+        : fetch(tile.url).then(response => {
+            if (response.status === 204) {
+              return null;
+            }
+            return response.json();
+          });
     },
     renderSubLayers: props => {
       if (props.data === null) {
@@ -312,6 +323,9 @@ function parseJSON(response) {
 }
 
 function parsePbf(buffer) {
+  if (buffer === null) {
+    return null;
+  }
   const pbf = new Protobuf(buffer);
   const tile = Tile.read(pbf);
   return tile;
