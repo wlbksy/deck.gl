@@ -2,7 +2,7 @@
 /* eslint-disable no-console */
 import React, {PureComponent} from 'react';
 import {render} from 'react-dom';
-import Tile from './Polygons';
+import Tile from './CVT';
 import Protobuf from 'pbf';
 import DeckGL from '@deck.gl/react';
 import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
@@ -40,7 +40,7 @@ const ALBERTO_URL =
   'http://10.0.32.237:8002/v3/maps/bq-bi-engine/table/{z}/{x}/{y}?mapId=cartobq._d296517907c39746c3a5652253a82ad3ee035be5.anon3c8918185b69854ef19bcfcd5afc498070e2dfbc&format=geojson&access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJYVnRIYUdzaTUxMFZZYml1YjA5ZCJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFsYmVydG9AY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfbWs3bXV6Z3UiLCJpc3MiOiJodHRwczovL2F1dGgubG9jYWwuY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA4NDA5NTYzMzQxMzU5MDQxNjg0IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTYzMjkxMjIzNCwiZXhwIjoxNjMyOTk4NjM0LCJhenAiOiJGM2tKOVJoUWhFTUFodDFRQllkQUluckRRTXJKVlI4dSIsInNjb3BlIjoicmVhZDpjdXJyZW50X3VzZXIiLCJwZXJtaXNzaW9ucyI6WyJhZG1pbjphY2NvdW50IiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bGlzdGVkX2FwcHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIl19.SPs4WJHjwa8X8Nz8-4noZU2xQmZ8N52XZh3Gmea18-aCBQBUh9BML8WcpBYDD_LU9a02V2uG8Xp4otnkz-C1gA7idMmynthQAYSeRQWslImbjR5BwYW7l6XMTJ3fF2a2MRC6gQCtgfN45OYagvzNNBcQEn6Fffcs79BUkQsdhRctFp5AN1SU7ixevly24_BJM56vX0ihCstFhaoQiDQCX7R7MHNLFIk1RXb2xDC-3inhUzw94wetPHcQNBr5MiLQfNmJYVq_oemU7bVGsT2iIvZIghhypBy__eA_z0uwtiEAekC_01JQ-9v1_TjewmLs30qzyfNonKX32nVcjKiJuw';
 
 const USE_BINARY = false;
-const table = 'cartobq.testtables.polygons_10k';
+const table = 'cartobq.testtables.polygons_100k';
 const format = USE_BINARY ? 'cvt' : 'geojson';
 const geomType = 'polygons';
 const ALBERTO_URL2 = `http://192.168.201.233:8002/v3/maps/bq-bi-engine/table/{z}/{x}/{y}?format=${format}&geomType=${geomType}&name=${table}&access_token=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlJYVnRIYUdzaTUxMFZZYml1YjA5ZCJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImFsYmVydG9AY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfbWs3bXV6Z3UiLCJpc3MiOiJodHRwczovL2F1dGgubG9jYWwuY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA4NDA5NTYzMzQxMzU5MDQxNjg0IiwiYXVkIjoiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImlhdCI6MTYzMzAwMjg4NCwiZXhwIjoxNjMzMDg5Mjg0LCJhenAiOiJGM2tKOVJoUWhFTUFodDFRQllkQUluckRRTXJKVlI4dSIsInNjb3BlIjoicmVhZDpjdXJyZW50X3VzZXIiLCJwZXJtaXNzaW9ucyI6WyJhZG1pbjphY2NvdW50IiwicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bGlzdGVkX2FwcHMiLCJ3cml0ZTptYXBzIiwid3JpdGU6dG9rZW5zIl19.ADe3FzhaqNcNAXmOgb4dvhXfOv27V2hVPAp2EXWdIuwBpEnanc8OhbTka4SmTXSVtTjyrOE0HECRRfpSi0_TeM9fXkHfIRM0MO5e_gUd0xN1-3I6_3dZadJFihquFQIqPECp9VzYMHD5N9k3z9uIscD4tFI7CmveQqvqFzFOMeKQ4uprSY3z3uTh3q5Nflk0_4sQ2kDKwaURdUsPKg0OqoJoUzKoA_vVD1JH82KX-R4LYWPlcMAjyTGIFHd8aO4nUiv6TASH_DNXhcHcMCYX6d4YgEQSnCtaoBUMS9xkOoM-LumWer0kAF8-5VsFpZmDZTCivFwjZS7IX5s7fkPyPQ`;
@@ -116,54 +116,52 @@ function createMVT() {
   });
 }
 
-const coordLength = 2;
-function generatePointIndices(coords) {
-  const n = coords.length / coordLength;
+// Fake out indices
+function generateIndices(positions) {
+  const n = positions.value.length / positions.size;
   const ids = new Uint16Array(n);
   for (let i = 0; i < n; i++) {
-    ids[i] = coordLength * i;
+    ids[i] = i;
   }
-  return ids;
+  return {value: ids, size: 1};
 }
 
 function tileToBinary(tile) {
-  const pointPositions = (tile && tile.coords) || [];
-  const ids = generatePointIndices(pointPositions);
-  const linesPositions = (tile && tile.positions) || [];
-  let linesPathIndices = (tile && tile.pathIndices) || [];
+  // Convert to typed arrays
+  // POINT
+  tile.points.positions.value = new Float32Array(tile.points.positions.value);
+  tile.points.featureIds = generateIndices(tile.points.positions);
+  tile.points.globalFeatureIds = tile.points.featureIds;
 
-  const linesIds = [...linesPathIndices];
-  if (linesPathIndices.length > 0) {
-    // Correct index to be per-vertex
-    linesPathIndices = linesPathIndices.map(i => i / 2);
+  // LINE
+  tile.lines.positions.value = new Float32Array(tile.lines.positions.value);
+  tile.lines.pathIndices.value = new Uint16Array(tile.lines.pathIndices.value);
+  tile.lines.featureIds = generateIndices(tile.lines.positions);
+  tile.lines.globalFeatureIds = tile.lines.featureIds;
 
-    // Add in final vertex
-    linesPathIndices.push(linesPositions.length / 2);
-  }
+  // POLYGON
+  tile.polygons.positions.value = new Float32Array(tile.polygons.positions.value);
+  tile.polygons.polygonIndices.value = new Uint16Array(tile.polygons.polygonIndices.value);
+  // TODO don't copy!
+  tile.polygons.primitivePolygonIndices = tile.polygons.polygonIndices;
+  tile.polygons.featureIds = generateIndices(tile.polygons.positions);
+  tile.polygons.globalFeatureIds = tile.polygons.featureIds;
+
   const value = {
     points: {
-      positions: {value: new Float32Array(pointPositions), size: coordLength},
-      globalFeatureIds: {value: ids, size: 1},
-      featureIds: {value: ids, size: 1},
+      ...tile.points,
       numericProps: {},
       properties: [],
       type: 'Point'
     },
     lines: {
-      positions: {value: new Float32Array(linesPositions), size: 2},
-      pathIndices: {value: new Uint16Array(linesPathIndices), size: 1},
-      globalFeatureIds: {value: new Uint16Array(linesIds), size: 1},
-      featureIds: {value: new Uint16Array(linesIds), size: 1},
+      ...tile.lines,
       numericProps: {},
       properties: [],
       type: 'LineString'
     },
     polygons: {
-      positions: {value: new Float32Array(), size: 2},
-      polygonIndices: {value: new Uint16Array(), size: 1},
-      primitivePolygonIndices: {value: new Uint16Array(), size: 1},
-      globalFeatureIds: {value: new Uint16Array(), size: 1},
-      featureIds: {value: new Uint16Array(), size: 1},
+      ...tile.polygons,
       numericProps: {},
       properties: [],
       type: 'Polygon'
