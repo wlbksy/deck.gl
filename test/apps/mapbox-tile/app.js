@@ -27,12 +27,13 @@ const COUNTRIES =
 const GEOJSON_URL =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_10m_airports.geojson';
 
+const params = new URLSearchParams(location.search.slice(1));
 const apiBaseUrl = 'https://gcp-us-east1-19.dev.api.carto.com';
-const connection = 'bigquery';
-const table = 'cartobq.testtables.points_100k';
+const connection = params.get('connection') || 'bigquery';
+const table = params.get('table') || 'cartobq.testtables.points_100k';
 const format = 'tilejson'; //
-const formatTiles = 'geojson'; // mvt | geojson | binary
-const geomType = 'points'; // points | lines | polygons
+const formatTiles = params.get('formatTiles') || 'geojson'; // mvt | geojson | binary
+const geomType = params.get('geomType') || 'points'; // points | lines | polygons
 const token =
   'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfZmt0MXdsbCIsImp0aSI6IjNmM2NlMjA3In0.zzfm2xZSAjcTlLxaPQHDy8uVJbGtEC5gItOg8U_gfP4';
 
