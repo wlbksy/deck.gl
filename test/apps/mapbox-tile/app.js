@@ -29,12 +29,12 @@ const GEOJSON_URL =
 
 const apiBaseUrl = 'https://gcp-us-east1-19.dev.api.carto.com';
 const connection = 'bigquery';
-const table = 'cartobq.test.starbucks_locations_usa_tileset';
+const table = 'cartobq.testtables.points_100k';
 const format = 'tilejson'; //
 const formatTiles = 'geojson'; // mvt | geojson | binary
 const geomType = 'points'; // points | lines | polygons
 const token =
-  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InlscXg0SVg3ek1oaUR1OFplSUlFSyJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXJAY2FydG9kYi5jb20iLCJodHRwOi8vYXBwLmNhcnRvLmNvbS9hY2NvdW50X2lkIjoiYWNfZmt0MXdsbCIsImlzcyI6Imh0dHBzOi8vYXV0aC5kZXYuY2FydG8uY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTA3OTY5NjU1OTI5NjExMjIxNDg2IiwiYXVkIjpbImNhcnRvLWNsb3VkLW5hdGl2ZS1hcGkiLCJodHRwczovL2NhcnRvLWRlZGljYXRlZC1lbnYudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTYzNzkxOTk0NywiZXhwIjoxNjM4MDA2MzQ3LCJhenAiOiJHM3E3bDJVb016Ulg4b3No…tlbnMiLCJ1cGRhdGU6Y3VycmVudF91c2VyIiwid3JpdGU6YXBwcyIsIndyaXRlOmNvbm5lY3Rpb25zIiwid3JpdGU6aW1wb3J0cyIsIndyaXRlOmxpc3RlZF9hcHBzIiwid3JpdGU6bWFwcyIsIndyaXRlOnRva2VucyJdfQ.ZDuPWbvxE3HnvG7BCelovJU9JiqEwBAIOu_x1JUMVciOilf0LpTveiN0ssg7M0hVQzCtegBuk03h63jyR4QVEElxVw_xfAMKwDJV67NP6yVmI5d2KJcL9fxX5vFXp_VxKuoq5ROLZYLF5taeMLENvztlNl6NLndQ8znyibfbHiMe23xnqu0uy5ebtszv3TN5KGlMa_B7ODjrV6QhC8SU7euXAQxRg0A9Z-kMqIdPkWlfz4yrQLbFH-xZWR8P75pJV1aJN7X1lyf_5zKf8ftbNKea3ADeP3k_PDsjv0IOqyFaN6U8kd0AM_QNCVbiH-Msp3ORVtrycLQlsdF4ybDONA';
+  'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfZmt0MXdsbCIsImp0aSI6IjNmM2NlMjA3In0.zzfm2xZSAjcTlLxaPQHDy8uVJbGtEC5gItOg8U_gfP4';
 
 const URL = `${apiBaseUrl}/v3/maps/${connection}/table/{z}/{x}/{y}?name=${table}&cache=&access_token=${token}&formatTiles=${formatTiles}&geomType=${geomType}`;
 
