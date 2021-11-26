@@ -48,7 +48,7 @@ const BORDERS = true;
 const MAP_LAYER_STYLES = {
   maxZoom: 14,
 
-  getFillColor: (f) => {
+  getFillColor: f => {
     switch (f.properties.layerName) {
       case 'poi':
         return [255, 0, 0];
@@ -154,17 +154,17 @@ function createTile() {
     maxZoom: 19,
     tileSize: 256,
     zoomOffset: devicePixelRatio === 1 ? -1 : 0,
-    getTileData: (tile) => {
+    getTileData: tile => {
       return USE_BINARY
         ? fetch(tile.url)
-            .then((response) => {
+            .then(response => {
               if (response.status === 204) {
                 return null;
               }
               return response.arrayBuffer();
             })
             .then(parsePbf)
-        : fetch(tile.url).then((response) => {
+        : fetch(tile.url).then(response => {
             if (response.status === 204) {
               return null;
             } else if (response.status === 401) {
@@ -174,7 +174,7 @@ function createTile() {
             return response.json();
           });
     },
-    renderSubLayers: (props) => {
+    renderSubLayers: props => {
       if (props.data === null) {
         return null;
       }
@@ -219,7 +219,7 @@ function createTile() {
                 [west, north]
               ]
             ],
-            getPath: (d) => d,
+            getPath: d => d,
             getColor: [255, 0, 0, 60],
             widthMinPixels: 1
           })
