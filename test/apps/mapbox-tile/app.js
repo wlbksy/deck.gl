@@ -9,65 +9,26 @@ import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
 import {GeoJsonLayer, PathLayer, PointCloudLayer} from '@deck.gl/layers';
 import {binaryToGeojson, geojsonToBinary} from '@loaders.gl/gis';
 
-// Set your mapbox token here
-const MAPBOX_TOKEN = process.env.MapboxAccessToken; // eslint-disable-line
-
-const INITIAL_VIEW_STATE = {
-  bearing: 0,
-  pitch: 0,
-  longitude: -73.95643,
-  latitude: 40.8039,
-  zoom: 9
-};
-
+const INITIAL_VIEW_STATE = {longitude: -73.95643, latitude: 40.8039, zoom: 9};
 const COUNTRIES =
-  'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson'; //eslint-disable-line
-
-// Hack static URL for now
-const GEOJSON_URL =
-  'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_10m_airports.geojson';
+  'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson';
 
 const params = new URLSearchParams(location.search.slice(1));
 const apiBaseUrl = 'https://gcp-us-east1-19.dev.api.carto.com';
 const connection = params.get('connection') || 'bigquery';
 const table = params.get('table') || 'cartobq.testtables.points_100k';
-const format = 'tilejson'; //
+const format = 'tilejson';
 const formatTiles = params.get('formatTiles') || 'geojson'; // mvt | geojson | binary
 const geomType = params.get('geomType') || 'points'; // points | lines | polygons
 const token =
   'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfZmt0MXdsbCIsImp0aSI6IjNmM2NlMjA3In0.zzfm2xZSAjcTlLxaPQHDy8uVJbGtEC5gItOg8U_gfP4';
 
 const URL = `${apiBaseUrl}/v3/maps/${connection}/table/{z}/{x}/{y}?name=${table}&cache=&access_token=${token}&formatTiles=${formatTiles}&geomType=${geomType}`;
-
-const USE_BINARY = false;
+const USE_BINARY = formatTiles === 'binary';
 
 const showBasemap = true;
 const showTile = true;
 const BORDERS = true;
-
-const MAP_LAYER_STYLES = {
-  maxZoom: 14,
-
-  getFillColor: f => {
-    switch (f.properties.layerName) {
-      case 'poi':
-        return [255, 0, 0];
-      case 'water':
-        return [120, 150, 180];
-      case 'building':
-        return [218, 218, 218];
-      default:
-        return [240, 240, 240];
-    }
-  },
-
-  getLineWidth: 1,
-  lineWidthUnits: 'pixels',
-  getLineColor: [192, 192, 192],
-
-  getPointRadius: 4,
-  pointRadiusUnits: 'pixels'
-};
 
 class Root extends PureComponent {
   constructor(props) {
@@ -194,12 +155,6 @@ function createTile() {
           stroked: true,
           filled: true,
           pointType: 'circle',
-          // iconAtlas: './spider-apple.png',
-          // iconMapping: {
-          //   marker: {x: 0, y: 0, width: 160, height: 160, mask: true}
-          // },
-          // getIcon: d => 'marker',
-          // getIconSize: 8,
           pointRadiusUnits: 'pixels',
           lineWidthMinPixels: 0.5,
           getPointRadius: 1.5,
