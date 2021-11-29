@@ -1,5 +1,6 @@
 /* global devicePixelRatio, document, fetch, performance */
 /* eslint-disable no-console */
+import {diff, addedDiff, deletedDiff, updatedDiff, detailedDiff} from 'deep-object-diff';
 import React, {useState} from 'react';
 import {render} from 'react-dom';
 import {Tile} from './carto-tile';
@@ -93,9 +94,9 @@ function tileToBinary(tile) {
 }
 
 function createTile({binary, border, clip, skipOdd}) {
-  const formatTiles = binary ? 'binary' : 'geojson';
+  // const formatTiles = binary ? 'binary' : 'geojson';
   return new TileLayer({
-    data: buildUrl({formatTiles}),
+    data: buildUrl({formatTiles: 'binary'}),
     minZoom: 0,
     maxZoom: 19,
     tileSize: 256,
@@ -108,24 +109,25 @@ function createTile({binary, border, clip, skipOdd}) {
     skipOdd,
 
     getTileData: tile => {
-      return binary
-        ? fetch(tile.url)
-            .then(response => {
-              if (response.status === 204) {
-                return null;
-              }
-              return response.arrayBuffer();
-            })
-            .then(parsePbf)
-        : fetch(tile.url).then(response => {
+      return Promise.all([
+        fetch(tile.url)
+          .then(response => {
             if (response.status === 204) {
               return null;
             }
-            return response.json();
-          });
+            return response.arrayBuffer();
+          })
+          .then(parsePbf),
+        fetch(tile.url.replace('binary', 'geojson')).then(response => {
+          if (response.status === 204) {
+            return null;
+          }
+          return response.json();
+        })
+      ]);
     },
     renderSubLayers: props => {
-      if (props.data === null || (props.skipOdd && (props.tile.x + props.tile.y) % 2)) {
+      if (props.data[0] === null || (props.skipOdd && (props.tile.x + props.tile.y) % 2)) {
         return null;
       }
 
@@ -135,14 +137,14 @@ function createTile({binary, border, clip, skipOdd}) {
       } = props.tile;
 
       // Convert data to binary
-      const binaryData = props.binary
-        ? tileToBinary(props.data)
-        : geojsonToBinary(props.data.features);
+      const binaryData = tileToBinary(props.data[0]);
+      const geojsonData = geojsonToBinary(props.data[1].features);
+      const changes = detailedDiff(binaryData.polygons, geojsonData.polygons);
 
       const tileProps = {
         // Data
         id: `${props.id}-geojson`,
-        data: binaryData,
+        data: props.binary ? binaryData : geojsonData,
 
         // Styling
         stroked: true,
