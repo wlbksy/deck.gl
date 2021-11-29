@@ -1,6 +1,7 @@
 /* global devicePixelRatio, document, fetch, performance */
 /* eslint-disable no-console */
 import {diff, addedDiff, deletedDiff, updatedDiff, detailedDiff} from 'deep-object-diff';
+import {MVTLoader} from '@loaders.gl/mvt';
 import React, {useState} from 'react';
 import {render} from 'react-dom';
 import {Tile} from './carto-tile';
@@ -209,6 +210,7 @@ function createMVT({binary, border, clip, skipOdd}) {
   return new MVTLayer({
     id: 'mvt',
     data: buildUrl({formatTiles: 'mvt'}),
+    loaders: [MVTLoader],
     getFillColor: [232, 171, 0]
   });
 }
