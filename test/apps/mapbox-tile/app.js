@@ -1,9 +1,10 @@
 /* global devicePixelRatio, document, fetch, performance */
 /* eslint-disable no-console */
-import React, {PureComponent} from 'react';
+import React, {Component, useState} from 'react';
 import {render} from 'react-dom';
-import Tile from './CVT';
+import {Tile} from './carto-tile';
 import Protobuf from 'pbf';
+import Checkbox from './Checkbox';
 import DeckGL from '@deck.gl/react';
 import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
 import {GeoJsonLayer, PathLayer, PointCloudLayer} from '@deck.gl/layers';
@@ -16,12 +17,15 @@ const COUNTRIES =
 const params = new URLSearchParams(location.search.slice(1));
 const apiBaseUrl = 'https://gcp-us-east1-19.dev.api.carto.com';
 const connection = params.get('connection') || 'bigquery';
-const table = params.get('table') || 'cartobq.testtables.points_100k';
+const table = params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.lines_300K_viz';
+// const table = params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.polygons_800K_viz';
+
 const format = 'tilejson';
 const formatTiles = params.get('formatTiles') || 'geojson'; // mvt | geojson | binary
-const geomType = params.get('geomType') || 'points'; // points | lines | polygons
-const token =
-  'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfZmt0MXdsbCIsImp0aSI6IjNmM2NlMjA3In0.zzfm2xZSAjcTlLxaPQHDy8uVJbGtEC5gItOg8U_gfP4';
+const geomType = params.get('geomType') || 'lines'; // points | lines | polygons
+//const token =
+//  'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfZmt0MXdsbCIsImp0aSI6IjNmM2NlMjA3In0.zzfm2xZSAjcTlLxaPQHDy8uVJbGtEC5gItOg8U_gfP4';
+const token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InlscXg0SVg3ek1oaUR1OFplSUlFSyJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXIrY2hyb21lQGNhcnRvZGIuY29tIiwiaHR0cDovL2FwcC5jYXJ0by5jb20vYWNjb3VudF9pZCI6ImFjX2ZrdDF3bGwiLCJpc3MiOiJodHRwczovL2F1dGguZGV2LmNhcnRvLmNvbS8iLCJzdWIiOiJhdXRoMHw2MWEwZDgyMGJkMDA3OTAwNzExNDViYTciLCJhdWQiOlsiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImh0dHBzOi8vY2FydG8tZGVkaWNhdGVkLWVudi51cy5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNjM4MTc1NzI2LCJleHAiOjE2MzgyNjIxMjYsImF6cCI6IkczcTdsMlVvTXpSWDhvc2htQXVzZWQwcGdRVldySkdQIiwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCByZWFkOmN1cnJlbnRfdXNlciB1cGRhdGU6Y3VycmVudF91c2VyIHJlYWQ6Y29ubmVjdGlvbnMgd3JpdGU6Y29ubmVjdGlvbnMgcmVhZDptYXBzIHdyaXRlOm1hcHMgcmVhZDphY2NvdW50IiwicGVybWlzc2lvbnMiOlsicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bWFwcyIsIndyaXRlOnRva2VucyJdfQ.d3O5cxDlXh-8_lUns9K9tLvGpAU6xXp_ep6hcnlSuUkwoFV6WGfKU5iacYuRfyD2Twr5ajQbuQudu4rLKmPrXguONBYRzDKmA3k0BebqlT-UO-s6UyR_gy55_Bt4YW5oqZlOrJS63szyZu16AIVs4LU8K8VuZO5vjXI2bCy4VZuJV49JRJryCMvErLiDbFQFf0nmw-JKpun8hgBB8BTqVqD71GeEsqKIK7PzL7_hGSv78LtpaTK_t8AHa3-PfJxWxPRfVXcE3Aup0zXadjylSrZP-F--w748ULScoTwOJbohpQpsyustfRhdPgm6YxynB8Q3S--qYz02uuQ52D1Fyw'
 
 const URL = `${apiBaseUrl}/v3/maps/${connection}/table/{z}/{x}/{y}?name=${table}&cache=&access_token=${token}&formatTiles=${formatTiles}&geomType=${geomType}`;
 const USE_BINARY = formatTiles === 'binary';
@@ -30,20 +34,25 @@ const showBasemap = true;
 const showTile = true;
 const BORDERS = true;
 
-class Root extends PureComponent {
-  constructor(props) {
-    super(props);
-  }
+function Root() {
+  const [clip, setClip] = useState(true);
+  const [skipOdd, setSkipOdd] = useState(true);
 
-  render() {
-    return (
+  const handleClip = () => { setClip(!clip) };
+  const handleSkipOdd = () => { setSkipOdd(!skipOdd) };
+  return (
+    <>
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
-        layers={[showBasemap && createBasemap(), showTile && createTile()]}
+        layers={[showBasemap && createBasemap(), showTile && createTile({clip, skipOdd})]}
       />
-    );
-  }
+      <div style={{position: "absolute", margin: 10}}>
+        <Checkbox label="Clip" value={clip} onChange={handleClip}/>
+        <Checkbox label="Skip Odd" value={skipOdd} onChange={handleSkipOdd}/>
+      </div>
+    </>
+  );
 }
 
 // Fake out indices
@@ -58,63 +67,33 @@ function generateIndices(positions) {
 
 function tileToBinary(tile) {
   // Convert to typed arrays
-  // POINT
   tile.points.positions.value = new Float32Array(tile.points.positions.value);
-  tile.points.featureIds = generateIndices(tile.points.positions);
-  tile.points.globalFeatureIds = tile.points.featureIds;
 
-  // LINE
   tile.lines.positions.value = new Float32Array(tile.lines.positions.value);
   tile.lines.pathIndices.value = new Uint16Array(tile.lines.pathIndices.value);
-  tile.lines.featureIds = generateIndices(tile.lines.positions);
-  tile.lines.globalFeatureIds = tile.lines.featureIds;
+  tile.lines.globalFeatureIds = tile.lines.featureIds; // HACK to fix missing data from API
 
-  // POLYGON
   tile.polygons.positions.value = new Float32Array(tile.polygons.positions.value);
   tile.polygons.polygonIndices.value = new Uint16Array(tile.polygons.polygonIndices.value);
-  // TODO don't copy!
-  tile.polygons.primitivePolygonIndices = tile.polygons.polygonIndices;
-  tile.polygons.featureIds = generateIndices(tile.polygons.positions);
-  tile.polygons.globalFeatureIds = tile.polygons.featureIds;
+  tile.polygons.primitivePolygonIndices = tile.polygons.polygonIndices; // HACK to fix missing data from API
+  tile.polygons.globalFeatureIds = tile.polygons.featureIds; // HACK to fix missing data from API
 
-  const value = {
-    points: {
-      ...tile.points,
-      numericProps: {},
-      properties: [],
-      type: 'Point'
-    },
-    lines: {
-      ...tile.lines,
-      numericProps: {},
-      properties: [],
-      type: 'LineString'
-    },
-    polygons: {
-      ...tile.polygons,
-      numericProps: {},
-      properties: [],
-      type: 'Polygon'
-    }
+  return  {
+    points: {type: 'Point', numericProps: {}, properties: [], type: 'Point', ...tile.points},
+    lines: {type: 'LineString', numericProps: {}, properties: [], ...tile.lines},
+    polygons: {type: 'Polygon', numericProps: {}, properties: [], ...tile.polygons}
   };
-
-  return value;
 }
 
-const EMPTY_FEATURECOLLECTION = {
-  type: 'FeatureCollection',
-  features: []
-};
-
-function createTile() {
+function createTile({clip, skipOdd}) {
   return new TileLayer({
     data: URL,
-    autoHighlight: true,
-    highlightColor: [60, 60, 60, 40],
     minZoom: 0,
     maxZoom: 19,
     tileSize: 256,
     zoomOffset: devicePixelRatio === 1 ? -1 : 0,
+    clip,
+    skipOdd,
     getTileData: tile => {
       return USE_BINARY
         ? fetch(tile.url)
@@ -128,20 +107,22 @@ function createTile() {
         : fetch(tile.url).then(response => {
             if (response.status === 204) {
               return null;
-            } else if (response.status === 401) {
-              // Hack to work around lack of token for now
-              return EMPTY_FEATURECOLLECTION;
             }
             return response.json();
           });
     },
     renderSubLayers: props => {
-      if (props.data === null) {
+      if (props.data === null || props.skipOdd && (props.tile.x + props.tile.y) % 2) {
         return null;
       }
+
+      // Debug, draw tile outline
       const {
         bbox: {west, south, east, north}
       } = props.tile;
+
+      // Clipping
+
 
       const binaryData = USE_BINARY
         ? tileToBinary(props.data)
@@ -159,7 +140,13 @@ function createTile() {
           lineWidthMinPixels: 0.5,
           getPointRadius: 1.5,
           getLineColor: [0, 0, 200],
-          getFillColor: [255, 50, 11]
+          getFillColor: [255, 50, 11],
+          pickable: true,
+          onHover: e => {
+            console.log(e);
+          },
+          autoHighlight: true,
+          highlightColor: [60, 60, 60, 40]
         }),
         BORDERS &&
           new PathLayer({
