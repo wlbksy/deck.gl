@@ -18,24 +18,26 @@ const COUNTRIES =
 const params = new URLSearchParams(location.search.slice(1));
 const apiBaseUrl = 'https://gcp-us-east1-19.dev.api.carto.com';
 const connection = params.get('connection') || 'bigquery';
-const table = params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.lines_300K_viz';
-// const table = params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.polygons_800K_viz';
+// const table = params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.lines_300K_viz';
+const table =
+  params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.polygons_3k_usacounty';
 
-const format = 'tilejson';
-const formatTiles = params.get('formatTiles') || 'geojson'; // mvt | geojson | binary
-const geomType = params.get('geomType') || 'lines'; // points | lines | polygons
+// const formatTiles = params.get('formatTiles') || 'geojson'; // mvt | geojson | binary
+const geomType = params.get('geomType') || 'polygons'; // points | lines | polygons
 //const token =
 //  'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfZmt0MXdsbCIsImp0aSI6IjNmM2NlMjA3In0.zzfm2xZSAjcTlLxaPQHDy8uVJbGtEC5gItOg8U_gfP4';
 const token =
   'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InlscXg0SVg3ek1oaUR1OFplSUlFSyJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXIrY2hyb21lQGNhcnRvZGIuY29tIiwiaHR0cDovL2FwcC5jYXJ0by5jb20vYWNjb3VudF9pZCI6ImFjX2ZrdDF3bGwiLCJpc3MiOiJodHRwczovL2F1dGguZGV2LmNhcnRvLmNvbS8iLCJzdWIiOiJhdXRoMHw2MWEwZDgyMGJkMDA3OTAwNzExNDViYTciLCJhdWQiOlsiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImh0dHBzOi8vY2FydG8tZGVkaWNhdGVkLWVudi51cy5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNjM4MTc1NzI2LCJleHAiOjE2MzgyNjIxMjYsImF6cCI6IkczcTdsMlVvTXpSWDhvc2htQXVzZWQwcGdRVldySkdQIiwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCByZWFkOmN1cnJlbnRfdXNlciB1cGRhdGU6Y3VycmVudF91c2VyIHJlYWQ6Y29ubmVjdGlvbnMgd3JpdGU6Y29ubmVjdGlvbnMgcmVhZDptYXBzIHdyaXRlOm1hcHMgcmVhZDphY2NvdW50IiwicGVybWlzc2lvbnMiOlsicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bWFwcyIsIndyaXRlOnRva2VucyJdfQ.d3O5cxDlXh-8_lUns9K9tLvGpAU6xXp_ep6hcnlSuUkwoFV6WGfKU5iacYuRfyD2Twr5ajQbuQudu4rLKmPrXguONBYRzDKmA3k0BebqlT-UO-s6UyR_gy55_Bt4YW5oqZlOrJS63szyZu16AIVs4LU8K8VuZO5vjXI2bCy4VZuJV49JRJryCMvErLiDbFQFf0nmw-JKpun8hgBB8BTqVqD71GeEsqKIK7PzL7_hGSv78LtpaTK_t8AHa3-PfJxWxPRfVXcE3Aup0zXadjylSrZP-F--w748ULScoTwOJbohpQpsyustfRhdPgm6YxynB8Q3S--qYz02uuQ52D1Fyw';
 
-const URL = `${apiBaseUrl}/v3/maps/${connection}/table/{z}/{x}/{y}?name=${table}&cache=&access_token=${token}&formatTiles=${formatTiles}&geomType=${geomType}`;
-const USE_BINARY = formatTiles === 'binary';
+function buildUrl({formatTiles}) {
+  return `${apiBaseUrl}/v3/maps/${connection}/table/{z}/{x}/{y}?name=${table}&cache=&access_token=${token}&formatTiles=${formatTiles}&geomType=${geomType}`;
+}
 
 const showBasemap = true;
 const showTile = true;
 
 function Root() {
+  const [binary, setBinary] = useState(true);
   const [border, setBorder] = useState(true);
   const [clip, setClip] = useState(true);
   const [skipOdd, setSkipOdd] = useState(false);
@@ -45,9 +47,13 @@ function Root() {
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
-        layers={[showBasemap && createBasemap(), showTile && createTile({border, clip, skipOdd})]}
+        layers={[
+          showBasemap && createBasemap(),
+          showTile && createTile({binary, border, clip, skipOdd})
+        ]}
       />
       <div style={{position: 'absolute', margin: 10}}>
+        <Checkbox label="Binary" value={binary} onChange={() => setBinary(!binary)} />
         <Checkbox label="Border" value={border} onChange={() => setBorder(!border)} />
         <Checkbox label="Clip" value={clip} onChange={() => setClip(!clip)} />
         <Checkbox label="Skip Odd" value={skipOdd} onChange={() => setSkipOdd(!skipOdd)} />
@@ -86,21 +92,23 @@ function tileToBinary(tile) {
   };
 }
 
-function createTile({border, clip, skipOdd}) {
+function createTile({binary, border, clip, skipOdd}) {
+  const formatTiles = binary ? 'binary' : 'geojson';
   return new TileLayer({
-    data: URL,
+    data: buildUrl({formatTiles}),
     minZoom: 0,
     maxZoom: 19,
     tileSize: 256,
     zoomOffset: devicePixelRatio === 1 ? -1 : 0,
 
     // Debug options
+    binary,
     border,
     clip,
     skipOdd,
 
     getTileData: tile => {
-      return USE_BINARY
+      return binary
         ? fetch(tile.url)
             .then(response => {
               if (response.status === 204) {
@@ -127,7 +135,7 @@ function createTile({border, clip, skipOdd}) {
       } = props.tile;
 
       // Convert data to binary
-      const binaryData = USE_BINARY
+      const binaryData = props.binary
         ? tileToBinary(props.data)
         : geojsonToBinary(props.data.features);
 
