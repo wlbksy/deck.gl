@@ -37,7 +37,8 @@ function buildUrl({formatTiles}) {
 
 const showBasemap = true;
 const showTile = false;
-const showMVT = true;
+const showCVT = true;
+const showMVT = false;
 
 function Root() {
   const [binary, setBinary] = useState(true);
@@ -54,6 +55,7 @@ function Root() {
         layers={[
           showBasemap && createBasemap(),
           showTile && createTile(opts),
+          showCVT && createCVT(opts),
           showMVT && createMVT(opts)
         ]}
       />
@@ -206,11 +208,54 @@ function createBasemap() {
   });
 }
 
+const parseCVT = (arrayBuffer, options) => {
+  const tile = parsePbf(arrayBuffer);
+  return tileToBinary(tile);
+};
+
+const CVTLoader = {
+  ...MVTLoader,
+  worker: false,
+  parse: async (arrayBuffer, options) => parseCVT(arrayBuffer, options),
+  parseSync: parseCVT
+};
+
+function createCVT({binary, border, clip, skipOdd}) {
+  return new MVTLayer({
+    id: 'cvt',
+    data: buildUrl({formatTiles: 'binary'}),
+    loaders: [CVTLoader],
+    getFillColor: [33, 171, 251],
+    renderSubLayers: props => {
+      if (props.data === null) {
+        return new GeoJsonLayer();
+      }
+
+      delete props.modelMatrix;
+      delete props.coordinateOrigin;
+      delete props.coordinateSystem;
+      delete props.extensions;
+
+      const subLayer = new GeoJsonLayer({
+        ...props,
+        stroked: true,
+        filled: true,
+        pointType: 'circle',
+        pointRadiusUnits: 'pixels',
+        lineWidthMinPixels: 0.5,
+        getPointRadius: 1.5,
+        getLineColor: [0, 0, 200],
+        getFillColor: [255, 50, 11]
+      });
+      return subLayer;
+    }
+  });
+}
+
 function createMVT({binary, border, clip, skipOdd}) {
   return new MVTLayer({
     id: 'mvt',
     data: buildUrl({formatTiles: 'mvt'}),
-    loaders: [MVTLoader],
     getFillColor: [232, 171, 0]
   });
 }
