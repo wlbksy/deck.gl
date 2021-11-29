@@ -35,13 +35,15 @@ function buildUrl({formatTiles}) {
 }
 
 const showBasemap = true;
-const showTile = true;
+const showTile = false;
+const showMVT = true;
 
 function Root() {
   const [binary, setBinary] = useState(true);
   const [border, setBorder] = useState(true);
   const [clip, setClip] = useState(true);
   const [skipOdd, setSkipOdd] = useState(false);
+  const opts = {binary, border, clip, skipOdd};
 
   return (
     <>
@@ -50,7 +52,8 @@ function Root() {
         controller={true}
         layers={[
           showBasemap && createBasemap(),
-          showTile && createTile({binary, border, clip, skipOdd})
+          showTile && createTile(opts),
+          showMVT && createMVT(opts)
         ]}
       />
       <div style={{position: 'absolute', margin: 10}}>
@@ -199,6 +202,14 @@ function createBasemap() {
     opacity: 0.4,
     getLineColor: [60, 60, 60],
     getFillColor: [200, 200, 200]
+  });
+}
+
+function createMVT({binary, border, clip, skipOdd}) {
+  return new MVTLayer({
+    id: 'mvt',
+    data: buildUrl({formatTiles: 'mvt'}),
+    getFillColor: [232, 171, 0]
   });
 }
 
