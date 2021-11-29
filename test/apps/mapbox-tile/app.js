@@ -36,7 +36,7 @@ function buildUrl({formatTiles}) {
 
 const showBasemap = true;
 const showTile = false;
-const showCVT = true;
+const showCBT = true;
 const showMVT = false;
 
 function Root() {
@@ -54,7 +54,7 @@ function Root() {
         layers={[
           showBasemap && createBasemap(),
           showTile && createTile(opts),
-          showCVT && createCVT(opts),
+          showCBT && createCBT(opts),
           showMVT && createMVT(opts)
         ]}
       />
@@ -207,7 +207,7 @@ function createBasemap() {
   });
 }
 
-const parseCVT = (arrayBuffer, options) => {
+const parseCBT = (arrayBuffer, options) => {
   const tile = parsePbf(arrayBuffer);
   return tileToBinary(tile);
 };
@@ -221,46 +221,47 @@ const CBTLoader = {
   mimeTypes: ['application/x-protobuf'],
   category: 'geometry',
   worker: false,
-  parse: async (arrayBuffer, options) => parseCVT(arrayBuffer, options),
-  parseSync: parseCVT
+  parse: async (arrayBuffer, options) => parseCBT(arrayBuffer, options),
+  parseSync: parseCBT
 };
 
-function createCVT({clip, skipOdd}) {
-  return new MVTLayer({
-    id: 'cvt',
+class CBTLayer extends MVTLayer {
+  renderSubLayers(props) {
+    if (props.data === null || (props.skipOdd && (props.tile.x + props.tile.y) % 2)) {
+      return null;
+    }
+
+    props.autoHighlight = false;
+
+    if (props.clip) {
+      const {
+        bbox: {west, south, east, north}
+      } = props.tile;
+      props.extensions = [new ClipExtension()];
+      props.clipBounds = [west, south, east, north];
+    }
+
+    const subLayer = new GeoJsonLayer({
+      ...props
+    });
+    return subLayer;
+  }
+}
+
+CBTLayer.layerName = 'CBTLayer';
+CBTLayer.defaultProps = {...MVTLayer.defaultProps, loaders: [CBTLoader]};
+
+function createCBT({clip, skipOdd}) {
+  return new CBTLayer({
+    id: 'cbt',
     data: buildUrl({formatTiles: 'binary'}),
-    loaders: [CBTLoader],
+
+    // Styling (same props as MVTLayer)
     getFillColor: [33, 171, 251],
 
     // Debug options
     clip,
-    skipOdd,
-
-    renderSubLayers: props => {
-      if (props.data === null || (props.skipOdd && (props.tile.x + props.tile.y) % 2)) {
-        // Handle no data case
-        return new GeoJsonLayer({id: props.id});
-      }
-
-      // Undo clipping done by MVTLayer as it is in wrong coordinate system
-      delete props.modelMatrix;
-      delete props.coordinateOrigin;
-      delete props.coordinateSystem;
-      delete props.extensions;
-
-      if (props.clip) {
-        const {
-          bbox: {west, south, east, north}
-        } = props.tile;
-        props.extensions = [new ClipExtension()];
-        props.clipBounds = [west, south, east, north];
-      }
-
-      const subLayer = new GeoJsonLayer({
-        ...props
-      });
-      return subLayer;
-    }
+    skipOdd
   });
 }
 
