@@ -1,7 +1,6 @@
 /* global devicePixelRatio, document, fetch, performance */
 /* eslint-disable no-console */
 import {diff, addedDiff, deletedDiff, updatedDiff, detailedDiff} from 'deep-object-diff';
-import {MVTLoader} from '@loaders.gl/mvt';
 import React, {useState} from 'react';
 import {render} from 'react-dom';
 import {Tile} from './carto-tile';
@@ -60,8 +59,8 @@ function Root() {
         ]}
       />
       <div style={{position: 'absolute', margin: 10}}>
-        <Checkbox label="Binary" value={binary} onChange={() => setBinary(!binary)} />
-        <Checkbox label="Border" value={border} onChange={() => setBorder(!border)} />
+        {showTile && <Checkbox label="Binary" value={binary} onChange={() => setBinary(!binary)} />}
+        {showTile && <Checkbox label="Border" value={border} onChange={() => setBorder(!border)} />}
         <Checkbox label="Clip" value={clip} onChange={() => setClip(!clip)} />
         <Checkbox label="Skip Odd" value={skipOdd} onChange={() => setSkipOdd(!skipOdd)} />
       </div>
@@ -213,21 +212,32 @@ const parseCVT = (arrayBuffer, options) => {
   return tileToBinary(tile);
 };
 
-const CVTLoader = {
-  ...MVTLoader,
+const CBTLoader = {
+  name: 'CARTO Binary Tile',
+  id: 'cbt',
+  module: 'carto',
+  version: 'dev',
+  extensions: ['pbf'],
+  mimeTypes: ['application/x-protobuf'],
+  category: 'geometry',
   worker: false,
   parse: async (arrayBuffer, options) => parseCVT(arrayBuffer, options),
   parseSync: parseCVT
 };
 
-function createCVT({binary, border, clip, skipOdd}) {
+function createCVT({clip, skipOdd}) {
   return new MVTLayer({
     id: 'cvt',
     data: buildUrl({formatTiles: 'binary'}),
-    loaders: [CVTLoader],
+    loaders: [CBTLoader],
     getFillColor: [33, 171, 251],
+
+    // Debug options
+    clip,
+    skipOdd,
+
     renderSubLayers: props => {
-      if (props.data === null) {
+      if (props.data === null || (props.skipOdd && (props.tile.x + props.tile.y) % 2)) {
         // Handle no data case
         return new GeoJsonLayer({id: props.id});
       }
@@ -238,6 +248,14 @@ function createCVT({binary, border, clip, skipOdd}) {
       delete props.coordinateSystem;
       delete props.extensions;
 
+      if (props.clip) {
+        const {
+          bbox: {west, south, east, north}
+        } = props.tile;
+        props.extensions = [new ClipExtension()];
+        props.clipBounds = [west, south, east, north];
+      }
+
       const subLayer = new GeoJsonLayer({
         ...props
       });
@@ -246,7 +264,7 @@ function createCVT({binary, border, clip, skipOdd}) {
   });
 }
 
-function createMVT({binary, border, clip, skipOdd}) {
+function createMVT() {
   return new MVTLayer({
     id: 'mvt',
     data: buildUrl({formatTiles: 'mvt'}),
