@@ -1,11 +1,12 @@
 /* global devicePixelRatio, document, fetch, performance */
 /* eslint-disable no-console */
-import React, {Component, useState} from 'react';
+import React, {useState} from 'react';
 import {render} from 'react-dom';
 import {Tile} from './carto-tile';
 import Protobuf from 'pbf';
 import Checkbox from './Checkbox';
 import DeckGL from '@deck.gl/react';
+import {ClipExtension} from '@deck.gl/extensions';
 import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
 import {GeoJsonLayer, PathLayer, PointCloudLayer} from '@deck.gl/layers';
 import {binaryToGeojson, geojsonToBinary} from '@loaders.gl/gis';
@@ -36,7 +37,7 @@ const BORDERS = true;
 
 function Root() {
   const [clip, setClip] = useState(true);
-  const [skipOdd, setSkipOdd] = useState(true);
+  const [skipOdd, setSkipOdd] = useState(false);
 
   const handleClip = () => { setClip(!clip) };
   const handleSkipOdd = () => { setSkipOdd(!skipOdd) };
@@ -117,50 +118,43 @@ function createTile({clip, skipOdd}) {
       }
 
       // Debug, draw tile outline
-      const {
-        bbox: {west, south, east, north}
-      } = props.tile;
+      const { bbox: {west, south, east, north} } = props.tile;
 
-      // Clipping
-
-
+      // Convert data to binary
       const binaryData = USE_BINARY
         ? tileToBinary(props.data)
         : geojsonToBinary(props.data.features);
+
+      const tileProps = {
+        // Data
+        id: `${props.id}-geojson`,
+        data: binaryData,
+
+        // Styling
+        stroked: true,
+        filled: true,
+        pointType: 'circle',
+        pointRadiusUnits: 'pixels',
+        lineWidthMinPixels: 0.5,
+        getPointRadius: 1.5,
+        getLineColor: [0, 0, 200],
+        getFillColor: [255, 50, 11],
+      }
+
+      // Clipping
+      if (clip) {
+        tileProps.extensions = [new ClipExtension()];
+        tileProps.clipBounds = [west, south, east, north];
+      }
+
       //const geojson = binaryToGeojson(binaryData);
       return [
-        new GeoJsonLayer({
-          id: `${props.id}-geojson`,
-          data: binaryData,
-          // Styles
-          stroked: true,
-          filled: true,
-          pointType: 'circle',
-          pointRadiusUnits: 'pixels',
-          lineWidthMinPixels: 0.5,
-          getPointRadius: 1.5,
-          getLineColor: [0, 0, 200],
-          getFillColor: [255, 50, 11],
-          pickable: true,
-          onHover: e => {
-            console.log(e);
-          },
-          autoHighlight: true,
-          highlightColor: [60, 60, 60, 40]
-        }),
+        new GeoJsonLayer(tileProps),
         BORDERS &&
           new PathLayer({
             id: `${props.id}-border`,
             visible: true,
-            data: [
-              [
-                [west, north],
-                [west, south],
-                [east, south],
-                [east, north],
-                [west, north]
-              ]
-            ],
+            data: [ [ [west, north], [west, south], [east, south], [east, north], [west, north] ] ],
             getPath: d => d,
             getColor: [255, 0, 0, 60],
             widthMinPixels: 1
