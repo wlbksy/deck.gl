@@ -26,7 +26,8 @@ const formatTiles = params.get('formatTiles') || 'geojson'; // mvt | geojson | b
 const geomType = params.get('geomType') || 'lines'; // points | lines | polygons
 //const token =
 //  'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfZmt0MXdsbCIsImp0aSI6IjNmM2NlMjA3In0.zzfm2xZSAjcTlLxaPQHDy8uVJbGtEC5gItOg8U_gfP4';
-const token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InlscXg0SVg3ek1oaUR1OFplSUlFSyJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXIrY2hyb21lQGNhcnRvZGIuY29tIiwiaHR0cDovL2FwcC5jYXJ0by5jb20vYWNjb3VudF9pZCI6ImFjX2ZrdDF3bGwiLCJpc3MiOiJodHRwczovL2F1dGguZGV2LmNhcnRvLmNvbS8iLCJzdWIiOiJhdXRoMHw2MWEwZDgyMGJkMDA3OTAwNzExNDViYTciLCJhdWQiOlsiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImh0dHBzOi8vY2FydG8tZGVkaWNhdGVkLWVudi51cy5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNjM4MTc1NzI2LCJleHAiOjE2MzgyNjIxMjYsImF6cCI6IkczcTdsMlVvTXpSWDhvc2htQXVzZWQwcGdRVldySkdQIiwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCByZWFkOmN1cnJlbnRfdXNlciB1cGRhdGU6Y3VycmVudF91c2VyIHJlYWQ6Y29ubmVjdGlvbnMgd3JpdGU6Y29ubmVjdGlvbnMgcmVhZDptYXBzIHdyaXRlOm1hcHMgcmVhZDphY2NvdW50IiwicGVybWlzc2lvbnMiOlsicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bWFwcyIsIndyaXRlOnRva2VucyJdfQ.d3O5cxDlXh-8_lUns9K9tLvGpAU6xXp_ep6hcnlSuUkwoFV6WGfKU5iacYuRfyD2Twr5ajQbuQudu4rLKmPrXguONBYRzDKmA3k0BebqlT-UO-s6UyR_gy55_Bt4YW5oqZlOrJS63szyZu16AIVs4LU8K8VuZO5vjXI2bCy4VZuJV49JRJryCMvErLiDbFQFf0nmw-JKpun8hgBB8BTqVqD71GeEsqKIK7PzL7_hGSv78LtpaTK_t8AHa3-PfJxWxPRfVXcE3Aup0zXadjylSrZP-F--w748ULScoTwOJbohpQpsyustfRhdPgm6YxynB8Q3S--qYz02uuQ52D1Fyw'
+const token =
+  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InlscXg0SVg3ek1oaUR1OFplSUlFSyJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXIrY2hyb21lQGNhcnRvZGIuY29tIiwiaHR0cDovL2FwcC5jYXJ0by5jb20vYWNjb3VudF9pZCI6ImFjX2ZrdDF3bGwiLCJpc3MiOiJodHRwczovL2F1dGguZGV2LmNhcnRvLmNvbS8iLCJzdWIiOiJhdXRoMHw2MWEwZDgyMGJkMDA3OTAwNzExNDViYTciLCJhdWQiOlsiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImh0dHBzOi8vY2FydG8tZGVkaWNhdGVkLWVudi51cy5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNjM4MTc1NzI2LCJleHAiOjE2MzgyNjIxMjYsImF6cCI6IkczcTdsMlVvTXpSWDhvc2htQXVzZWQwcGdRVldySkdQIiwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCByZWFkOmN1cnJlbnRfdXNlciB1cGRhdGU6Y3VycmVudF91c2VyIHJlYWQ6Y29ubmVjdGlvbnMgd3JpdGU6Y29ubmVjdGlvbnMgcmVhZDptYXBzIHdyaXRlOm1hcHMgcmVhZDphY2NvdW50IiwicGVybWlzc2lvbnMiOlsicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bWFwcyIsIndyaXRlOnRva2VucyJdfQ.d3O5cxDlXh-8_lUns9K9tLvGpAU6xXp_ep6hcnlSuUkwoFV6WGfKU5iacYuRfyD2Twr5ajQbuQudu4rLKmPrXguONBYRzDKmA3k0BebqlT-UO-s6UyR_gy55_Bt4YW5oqZlOrJS63szyZu16AIVs4LU8K8VuZO5vjXI2bCy4VZuJV49JRJryCMvErLiDbFQFf0nmw-JKpun8hgBB8BTqVqD71GeEsqKIK7PzL7_hGSv78LtpaTK_t8AHa3-PfJxWxPRfVXcE3Aup0zXadjylSrZP-F--w748ULScoTwOJbohpQpsyustfRhdPgm6YxynB8Q3S--qYz02uuQ52D1Fyw';
 
 const URL = `${apiBaseUrl}/v3/maps/${connection}/table/{z}/{x}/{y}?name=${table}&cache=&access_token=${token}&formatTiles=${formatTiles}&geomType=${geomType}`;
 const USE_BINARY = formatTiles === 'binary';
@@ -46,10 +47,10 @@ function Root() {
         controller={true}
         layers={[showBasemap && createBasemap(), showTile && createTile({border, clip, skipOdd})]}
       />
-      <div style={{position: "absolute", margin: 10}}>
-        <Checkbox label="Border" value={border} onChange={() => setBorder(!border)}/>
-        <Checkbox label="Clip" value={clip} onChange={() => setClip(!clip)}/>
-        <Checkbox label="Skip Odd" value={skipOdd} onChange={() => setSkipOdd(!skipOdd)}/>
+      <div style={{position: 'absolute', margin: 10}}>
+        <Checkbox label="Border" value={border} onChange={() => setBorder(!border)} />
+        <Checkbox label="Clip" value={clip} onChange={() => setClip(!clip)} />
+        <Checkbox label="Skip Odd" value={skipOdd} onChange={() => setSkipOdd(!skipOdd)} />
       </div>
     </>
   );
@@ -78,7 +79,7 @@ function tileToBinary(tile) {
   tile.polygons.primitivePolygonIndices = tile.polygons.polygonIndices; // HACK to fix missing data from API
   tile.polygons.globalFeatureIds = tile.polygons.featureIds; // HACK to fix missing data from API
 
-  return  {
+  return {
     points: {type: 'Point', numericProps: {}, properties: [], type: 'Point', ...tile.points},
     lines: {type: 'LineString', numericProps: {}, properties: [], ...tile.lines},
     polygons: {type: 'Polygon', numericProps: {}, properties: [], ...tile.polygons}
@@ -116,12 +117,14 @@ function createTile({border, clip, skipOdd}) {
           });
     },
     renderSubLayers: props => {
-      if (props.data === null || props.skipOdd && (props.tile.x + props.tile.y) % 2) {
+      if (props.data === null || (props.skipOdd && (props.tile.x + props.tile.y) % 2)) {
         return null;
       }
 
       // Debug, draw tile outline
-      const { bbox: {west, south, east, north} } = props.tile;
+      const {
+        bbox: {west, south, east, north}
+      } = props.tile;
 
       // Convert data to binary
       const binaryData = USE_BINARY
@@ -141,8 +144,8 @@ function createTile({border, clip, skipOdd}) {
         lineWidthMinPixels: 0.5,
         getPointRadius: 1.5,
         getLineColor: [0, 0, 200],
-        getFillColor: [255, 50, 11],
-      }
+        getFillColor: [255, 50, 11]
+      };
 
       // Clipping
       if (clip) {
@@ -157,7 +160,15 @@ function createTile({border, clip, skipOdd}) {
           new PathLayer({
             id: `${props.id}-border`,
             visible: true,
-            data: [ [ [west, north], [west, south], [east, south], [east, north], [west, north] ] ],
+            data: [
+              [
+                [west, north],
+                [west, south],
+                [east, south],
+                [east, north],
+                [west, north]
+              ]
+            ],
             getPath: d => d,
             getColor: [255, 0, 0, 60],
             widthMinPixels: 1
