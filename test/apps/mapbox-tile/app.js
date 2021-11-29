@@ -228,24 +228,18 @@ function createCVT({binary, border, clip, skipOdd}) {
     getFillColor: [33, 171, 251],
     renderSubLayers: props => {
       if (props.data === null) {
-        return new GeoJsonLayer();
+        // Handle no data case
+        return new GeoJsonLayer({id: props.id});
       }
 
+      // Undo clipping done by MVTLayer as it is in wrong coordinate system
       delete props.modelMatrix;
       delete props.coordinateOrigin;
       delete props.coordinateSystem;
       delete props.extensions;
 
       const subLayer = new GeoJsonLayer({
-        ...props,
-        stroked: true,
-        filled: true,
-        pointType: 'circle',
-        pointRadiusUnits: 'pixels',
-        lineWidthMinPixels: 0.5,
-        getPointRadius: 1.5,
-        getLineColor: [0, 0, 200],
-        getFillColor: [255, 50, 11]
+        ...props
       });
       return subLayer;
     }
