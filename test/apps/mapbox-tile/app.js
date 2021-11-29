@@ -33,24 +33,23 @@ const USE_BINARY = formatTiles === 'binary';
 
 const showBasemap = true;
 const showTile = true;
-const BORDERS = true;
 
 function Root() {
+  const [border, setBorder] = useState(true);
   const [clip, setClip] = useState(true);
   const [skipOdd, setSkipOdd] = useState(false);
 
-  const handleClip = () => { setClip(!clip) };
-  const handleSkipOdd = () => { setSkipOdd(!skipOdd) };
   return (
     <>
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
-        layers={[showBasemap && createBasemap(), showTile && createTile({clip, skipOdd})]}
+        layers={[showBasemap && createBasemap(), showTile && createTile({border, clip, skipOdd})]}
       />
       <div style={{position: "absolute", margin: 10}}>
-        <Checkbox label="Clip" value={clip} onChange={handleClip}/>
-        <Checkbox label="Skip Odd" value={skipOdd} onChange={handleSkipOdd}/>
+        <Checkbox label="Border" value={border} onChange={() => setBorder(!border)}/>
+        <Checkbox label="Clip" value={clip} onChange={() => setClip(!clip)}/>
+        <Checkbox label="Skip Odd" value={skipOdd} onChange={() => setSkipOdd(!skipOdd)}/>
       </div>
     </>
   );
@@ -86,15 +85,19 @@ function tileToBinary(tile) {
   };
 }
 
-function createTile({clip, skipOdd}) {
+function createTile({border, clip, skipOdd}) {
   return new TileLayer({
     data: URL,
     minZoom: 0,
     maxZoom: 19,
     tileSize: 256,
     zoomOffset: devicePixelRatio === 1 ? -1 : 0,
+
+    // Debug options
+    border,
     clip,
     skipOdd,
+
     getTileData: tile => {
       return USE_BINARY
         ? fetch(tile.url)
@@ -150,7 +153,7 @@ function createTile({clip, skipOdd}) {
       //const geojson = binaryToGeojson(binaryData);
       return [
         new GeoJsonLayer(tileProps),
-        BORDERS &&
+        border &&
           new PathLayer({
             id: `${props.id}-border`,
             visible: true,
