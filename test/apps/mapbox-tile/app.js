@@ -92,7 +92,7 @@ function tileToBinary(tile) {
   tile.polygons.globalFeatureIds = tile.polygons.featureIds; // HACK to fix missing data from API
 
   return {
-    points: {type: 'Point', numericProps: {}, properties: [], type: 'Point', ...tile.points},
+    points: {type: 'Point', numericProps: {}, properties: [], ...tile.points},
     lines: {type: 'LineString', numericProps: {}, properties: [], ...tile.lines},
     polygons: {type: 'Polygon', numericProps: {}, properties: [], ...tile.polygons}
   };
@@ -259,7 +259,15 @@ function createCBT({clip, skipOdd}) {
     // Styling (same props as MVTLayer)
     getFillColor: [33, 171, 251],
     getElevation: 1000,
-    extruded: true,
+    // extruded: true,
+    stroked: true,
+    filled: true,
+    pointType: 'circle',
+    pointRadiusUnits: 'pixels',
+    lineWidthMinPixels: 0.5,
+    getPointRadius: 1.5,
+    getLineColor: [0, 0, 200],
+    // getFillColor: [255, 50, 11],
 
     // Debug options
     clip,
