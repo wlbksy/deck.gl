@@ -96,7 +96,7 @@ function createTile({binary, border, clip, skipOdd}) {
     data: buildUrl({formatTiles: 'binary'}),
     minZoom: 0,
     maxZoom: 19,
-    tileSize: 256,
+    tileSize: 512,
     zoomOffset: devicePixelRatio === 1 ? -1 : 0,
 
     // Debug options
