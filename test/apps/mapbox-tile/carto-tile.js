@@ -87,17 +87,19 @@ Lines.write = function (obj, pbf) {
 export const Polygons = {};
 
 Polygons.read = function (pbf, end) {
-    return pbf.readFields(Polygons._readField, {positions: null, polygonIndices: null, featureIds: null}, end);
+    return pbf.readFields(Polygons._readField, {positions: null, polygonIndices: null, featureIds: null, primitivePolygonIndices: null}, end);
 };
 Polygons._readField = function (tag, obj, pbf) {
     if (tag === 1) obj.positions = Coords.read(pbf, pbf.readVarint() + pbf.pos);
     else if (tag === 2) obj.polygonIndices = Coords.read(pbf, pbf.readVarint() + pbf.pos);
     else if (tag === 3) obj.featureIds = Coords.read(pbf, pbf.readVarint() + pbf.pos);
+    else if (tag === 4) obj.primitivePolygonIndices = Coords.read(pbf, pbf.readVarint() + pbf.pos);
 };
 Polygons.write = function (obj, pbf) {
     if (obj.positions) pbf.writeMessage(1, Coords.write, obj.positions);
     if (obj.polygonIndices) pbf.writeMessage(2, Coords.write, obj.polygonIndices);
     if (obj.featureIds) pbf.writeMessage(3, Coords.write, obj.featureIds);
+    if (obj.primitivePolygonIndices) pbf.writeMessage(4, Coords.write, obj.primitivePolygonIndices);
 };
 
 // Tile ========================================
