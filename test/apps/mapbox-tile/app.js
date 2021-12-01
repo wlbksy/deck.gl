@@ -10,6 +10,7 @@ import DeckGL from '@deck.gl/react';
 import {ClipExtension} from '@deck.gl/extensions';
 import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
 import {GeoJsonLayer, PathLayer, PointCloudLayer} from '@deck.gl/layers';
+import {getPolygonSignedArea} from '@math.gl/polygon';
 import {binaryToGeojson, geojsonToBinary} from '@loaders.gl/gis';
 
 const INITIAL_VIEW_STATE = {longitude: -73.95643, latitude: 40.8039, zoom: 9};
@@ -35,8 +36,8 @@ function buildUrl({formatTiles}) {
 }
 
 const showBasemap = true;
-const showTile = false;
-const showCBT = true;
+const showTile = true;
+const showCBT = false;
 const showMVT = false;
 
 function Root() {
@@ -135,8 +136,42 @@ function createTile({binary, border, clip, skipOdd}) {
 
       // Convert data to binary
       const binaryData = tileToBinary(props.data[0]);
-      const geojsonData = geojsonToBinary(props.data[1].features);
-      const changes = detailedDiff(binaryData.polygons, geojsonData.polygons);
+      const geojsonData = props.data[1];
+
+      const geojsonBinaryData = geojsonToBinary(geojsonData.features);
+      const binaryGeojsonData = binaryToGeojson(binaryData);
+      const changes = detailedDiff(binaryData.polygons, geojsonBinaryData.polygons);
+
+      // Check rings
+      // const {positions, polygonIndices, primitivePolygonIndices} = binaryData.polygons;
+      // if (polygonIndices.value.length !== primitivePolygonIndices.value.length) {
+      //   for (let i = 0, j = 0, il = polygonIndices.value.length; i < il; j++) {
+      //     const index = polygonIndices.value[i];
+      //     const primitiveIndex = primitivePolygonIndices.value[j];
+      //     if (index === primitiveIndex) {
+      //       // Outer ring
+      //       i++;
+      //     } else {
+      //       // Inner ring
+      //       const endIndex = primitivePolygonIndices.value[j + 1];
+      //       const ring = positions.value.subarray(2 * primitiveIndex, 2 * endIndex);
+      //       ring.reverse();
+      //       for (let c = 0; c < ring.length; c += 2) {
+      //         // Correct coordinate order
+      //         ring.subarray(c, c + 2).reverse();
+      //       }
+      //     }
+      //   }
+      //   const indices = primitivePolygonIndices.value;
+      //   const areas = [...indices].map((x, i) =>
+      //     Math.sign(
+      //       getPolygonSignedArea(positions.value, {
+      //         start: 2 * indices[i],
+      //         end: 2 * indices[i + 1]
+      //       })
+      //     )
+      //   );
+      // }
 
       const tileProps = {
         // Data
@@ -160,7 +195,6 @@ function createTile({binary, border, clip, skipOdd}) {
         tileProps.clipBounds = [west, south, east, north];
       }
 
-      //const geojson = binaryToGeojson(binaryData);
       return [
         new GeoJsonLayer(tileProps),
         border &&
