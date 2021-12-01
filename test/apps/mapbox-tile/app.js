@@ -35,6 +35,7 @@ function buildUrl({formatTiles}) {
   return `${apiBaseUrl}/v3/maps/${connection}/table/{z}/{x}/{y}?name=${table}&cache=&access_token=${token}&formatTiles=${formatTiles}&geomType=${geomType}`;
 }
 
+const wip = true;
 const showBasemap = true;
 const showTile = true;
 const showCBT = false;
@@ -108,14 +109,14 @@ function createTile({binary, border, clip, skipOdd}) {
 
     getTileData: tile => {
       return Promise.all([
-        fetch(tile.url)
+        fetch(wip ? tile.url.replace('binary', 'wip') : tile.url)
           .then(response => {
             if (response.status === 204) {
               return null;
             }
             return response.arrayBuffer();
           })
-          .then(parsePbf),
+          .then(parseCBT),
         fetch(tile.url.replace('binary', 'geojson')).then(response => {
           if (response.status === 204) {
             return null;
@@ -135,43 +136,13 @@ function createTile({binary, border, clip, skipOdd}) {
       } = props.tile;
 
       // Convert data to binary
-      const binaryData = tileToBinary(props.data[0]);
-      const geojsonData = props.data[1];
+      const binaryData = props.data[0]; // <- Broken
+      const geojsonData = props.data[1]; // <- Working
 
-      const geojsonBinaryData = geojsonToBinary(geojsonData.features);
-      const binaryGeojsonData = binaryToGeojson(binaryData);
-      const changes = detailedDiff(binaryData.polygons, geojsonBinaryData.polygons);
-
-      // Check rings
-      // const {positions, polygonIndices, primitivePolygonIndices} = binaryData.polygons;
-      // if (polygonIndices.value.length !== primitivePolygonIndices.value.length) {
-      //   for (let i = 0, j = 0, il = polygonIndices.value.length; i < il; j++) {
-      //     const index = polygonIndices.value[i];
-      //     const primitiveIndex = primitivePolygonIndices.value[j];
-      //     if (index === primitiveIndex) {
-      //       // Outer ring
-      //       i++;
-      //     } else {
-      //       // Inner ring
-      //       const endIndex = primitivePolygonIndices.value[j + 1];
-      //       const ring = positions.value.subarray(2 * primitiveIndex, 2 * endIndex);
-      //       ring.reverse();
-      //       for (let c = 0; c < ring.length; c += 2) {
-      //         // Correct coordinate order
-      //         ring.subarray(c, c + 2).reverse();
-      //       }
-      //     }
-      //   }
-      //   const indices = primitivePolygonIndices.value;
-      //   const areas = [...indices].map((x, i) =>
-      //     Math.sign(
-      //       getPolygonSignedArea(positions.value, {
-      //         start: 2 * indices[i],
-      //         end: 2 * indices[i + 1]
-      //       })
-      //     )
-      //   );
-      // }
+      const geojsonBinaryData = geojsonToBinary(geojsonData.features); // <- Broken
+      // const binaryGeojsonData = binaryToGeojson(binaryData); // <- Working
+      // const doubleConvertData = geojsonToBinary(binaryGeojsonData);
+      // const changes = detailedDiff(geojsonBinaryData, doubleConvertData);
 
       const tileProps = {
         // Data
@@ -233,9 +204,15 @@ function createBasemap() {
   });
 }
 
+const parseJSON = arrayBuffer => {
+  return JSON.parse(new TextDecoder().decode(arrayBuffer));
+};
+
 const parseCBT = (arrayBuffer, options) => {
-  const tile = parsePbf(arrayBuffer);
-  return tileToBinary(tile);
+  if (!arrayBuffer) return null;
+  const tile = wip ? parseJSON(arrayBuffer) : parsePbf(arrayBuffer);
+  const binary = tileToBinary(tile);
+  return binary;
 };
 
 const CBTLoader = {
@@ -309,15 +286,7 @@ function createMVT() {
   });
 }
 
-function parseJSON(response) {
-  const value = response.json();
-  return value;
-}
-
 function parsePbf(buffer) {
-  if (buffer === null) {
-    return null;
-  }
   const pbf = new Protobuf(buffer);
   const tile = Tile.read(pbf);
   return tile;
