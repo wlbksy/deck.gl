@@ -68,16 +68,6 @@ function Root() {
   );
 }
 
-// Fake out indices
-function generateIndices(positions) {
-  const n = positions.value.length / positions.size;
-  const ids = new Uint16Array(n);
-  for (let i = 0; i < n; i++) {
-    ids[i] = i;
-  }
-  return {value: ids, size: 1};
-}
-
 function tileToBinary(tile) {
   // Convert to typed arrays
   tile.points.positions.value = new Float32Array(tile.points.positions.value);
