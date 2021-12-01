@@ -17,7 +17,7 @@ const COUNTRIES =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson';
 
 const params = new URLSearchParams(location.search.slice(1));
-const apiBaseUrl = 'https://gcp-us-east1-19.dev.api.carto.com';
+const apiBaseUrl = 'https://direct-gcp-us-east1-19.dev.api.carto.com';
 const connection = params.get('connection') || 'bigquery';
 // const table = params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.lines_300K_viz';
 const table =
