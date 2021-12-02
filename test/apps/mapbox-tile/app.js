@@ -344,10 +344,25 @@ function binarize(features, firstPassData) {
     const data = [];
     const lines = [];
 
-    if (['MultiPolygon', 'MultiLineString', 'MultiPoint'].indexOf(type) === -1) {
-      binarizePolygon(coordinates, data, lines);
-    } else {
-      coordinates.map(c => binarizePolygon(c, data, lines));
+    switch (type) {
+      case 'Point':
+        binarizePoint(coordinates, data, lines);
+        break;
+      case 'MultiPoint':
+        coordinates.map(c => binarizePoint(c, data, lines));
+        break;
+      case 'LineString':
+        binarizeLineString(coordinates, data, lines);
+        break;
+      case 'MultiLineString':
+        coordinates.map(c => binarizeLineString(c, data, lines));
+        break;
+      case 'Polygon':
+        binarizePolygon(coordinates, data, lines);
+        break;
+      case 'MultiPolygon':
+        coordinates.map(c => binarizePolygon(c, data, lines));
+        break;
     }
 
     geometry.data = data;
