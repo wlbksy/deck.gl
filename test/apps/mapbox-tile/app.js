@@ -14,7 +14,7 @@ import {getPolygonSignedArea} from '@math.gl/polygon';
 import {MVTLoader} from '@loaders.gl/mvt';
 import {binaryToGeojson, geojsonToBinary, TEST_EXPORTS} from '@loaders.gl/gis';
 import {classifyRings, featuresToBinary} from '@loaders.gl/mvt';
-import {testdata} from './testdata.js';
+import {testdata, correct, multipolygon} from './testdata.js';
 
 const INITIAL_VIEW_STATE = {longitude: -73.95643, latitude: 40.8039, zoom: 9};
 const COUNTRIES =
@@ -241,7 +241,7 @@ const parseJSON = arrayBuffer => {
 
 const parseCBT = (arrayBuffer, options) => {
   if (!arrayBuffer) return null;
-  if (geojson) return parseJSON(arrayBuffer);
+  if (geojson) return geojsonToBinary2(parseJSON(arrayBuffer).features);
   const tile = wip ? parseJSON(arrayBuffer) : parsePbf(arrayBuffer);
   const binary = tileToBinary(tile);
   return binary;
@@ -320,20 +320,29 @@ function createMVT() {
   });
 }
 
+function binarizeFeature(coordinates, data, lines) {
+  for (const primitive of coordinates) {
+    lines.push(data.length);
+    data.push(...primitive.flat());
+  }
+}
+
 // Mimic output format of BVT
 function binarize(features, firstPassData) {
   for (let feature of features) {
-    const {coordinates} = feature.geometry;
+    const {geometry} = feature;
+    const {coordinates, type} = geometry;
     let data = [];
     const lines = [];
-    for (const primitive of coordinates) {
-      lines.push(data.length);
-      data = data.concat(primitive.flat());
+    if (['MultiPolygon', 'MultiLineString', 'MultiPoint'].indexOf(type) === -1) {
+      binarizeFeature(coordinates, data, lines);
+    } else {
+      coordinates.map(c => binarizeFeature(c, data, lines));
     }
 
-    feature.geometry.data = data;
-    feature.geometry.lines = lines;
-    delete feature.geometry.coordinates;
+    geometry.data = data;
+    geometry.lines = lines;
+    delete geometry.coordinates;
 
     _toBinaryCoordinates(feature, firstPassData);
   }
@@ -370,17 +379,20 @@ function _toBinaryCoordinates(feature, firstPassData) {
   // eslint-disable-next-line default-case
   switch (geom.type) {
     case 'Point': // Point
+    case 'MultiPoint': // Point
       firstPassData.pointFeaturesCount++;
       firstPassData.pointPositionsCount += geom.lines.length;
       break;
 
     case 'LineString': // LineString
+    case 'MultiLineString': // LineString
       firstPassData.lineFeaturesCount++;
       firstPassData.linePathsCount += geom.lines.length;
       firstPassData.linePositionsCount += geom.data.length / coordLength;
       break;
 
     case 'Polygon': // Polygon
+    case 'MultiPolygon': // Polygon
       const classified = classifyRings(geom);
 
       // Unlike Point & LineString geom.lines is a 2D array, thanks
@@ -423,7 +435,7 @@ function geojsonToBinary2(features) {
 function createGeojson({binary}) {
   return new GeoJsonLayer({
     id: 'geojson',
-    data: binary ? geojsonToBinary2(testdata.features) : testdata,
+    data: binary ? geojsonToBinary2(multipolygon.features) : multipolygon,
     stroked: true,
     lineWidthMinPixels: 0.5,
     getFillColor: [0, 171, 255],
