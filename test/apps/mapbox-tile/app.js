@@ -350,26 +350,23 @@ function binarizePolygon(coordinates, data, lines) {
 // Mimic output format of BVT
 function binarize(feature) {
   const {geometry} = feature;
-  const {coordinates, type} = geometry;
+  let {coordinates} = geometry;
   const data = [];
   const lines = [];
 
-  switch (type) {
+  switch (geometry.type) {
     case 'Point':
-      binarizePoint(coordinates, data, lines);
-      break;
+      coordinates = [coordinates];
     case 'MultiPoint':
       coordinates.map(c => binarizePoint(c, data, lines));
       break;
     case 'LineString':
-      binarizeLineString(coordinates, data, lines);
-      break;
+      coordinates = [coordinates];
     case 'MultiLineString':
       coordinates.map(c => binarizeLineString(c, data, lines));
       break;
     case 'Polygon':
-      binarizePolygon(coordinates, data, lines);
-      break;
+      coordinates = [coordinates];
     case 'MultiPolygon':
       coordinates.map(c => binarizePolygon(c, data, lines));
       break;
