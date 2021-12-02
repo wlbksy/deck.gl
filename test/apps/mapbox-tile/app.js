@@ -42,9 +42,9 @@ const geojson = true;
 const wip = true;
 const showBasemap = true;
 const showTile = false;
-const showCBT = true;
+const showCBT = false;
 const showMVT = false;
-const showGeojson = false;
+const showGeojson = true;
 
 function Root() {
   const [binary, setBinary] = useState(false);
@@ -320,10 +320,19 @@ function createMVT() {
   });
 }
 
-function binarizeFeature(coordinates, data, lines) {
-  for (const primitive of coordinates) {
-    lines.push(data.length);
-    data.push(...primitive.flat());
+function binarizePoint(coordinates, data, lines) {
+  lines.push(data.length);
+  data.push(...coordinates);
+}
+
+function binarizeLineString(coordinates, data, lines) {
+  lines.push(data.length);
+  data.push(...coordinates.flat());
+}
+
+function binarizePolygon(coordinates, data, lines) {
+  for (const lineString of coordinates) {
+    binarizeLineString(lineString, data, lines);
   }
 }
 
@@ -332,12 +341,13 @@ function binarize(features, firstPassData) {
   for (let feature of features) {
     const {geometry} = feature;
     const {coordinates, type} = geometry;
-    let data = [];
+    const data = [];
     const lines = [];
+
     if (['MultiPolygon', 'MultiLineString', 'MultiPoint'].indexOf(type) === -1) {
-      binarizeFeature(coordinates, data, lines);
+      binarizePolygon(coordinates, data, lines);
     } else {
-      coordinates.map(c => binarizeFeature(c, data, lines));
+      coordinates.map(c => binarizePolygon(c, data, lines));
     }
 
     geometry.data = data;
