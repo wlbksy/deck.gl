@@ -331,8 +331,19 @@ function binarizeLineString(coordinates, data, lines) {
 }
 
 function binarizePolygon(coordinates, data, lines) {
+  let i = 0;
+  let ccw;
+  if (coordinates.length > 1) {
+    // Check holes for correct winding
+    ccw = getPolygonSignedArea(coordinates[0].flat()) < 0;
+  }
   for (const lineString of coordinates) {
+    if (i > 0 && ccw === getPolygonSignedArea(lineString.flat()) < 0) {
+      // If winding is the same of outer ring, need to reverse
+      lineString.reverse();
+    }
     binarizeLineString(lineString, data, lines);
+    i++;
   }
 }
 
