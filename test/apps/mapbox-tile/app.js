@@ -23,14 +23,14 @@ const COUNTRIES =
 const params = new URLSearchParams(location.search.slice(1));
 const apiBaseUrl = 'https://direct-gcp-us-east1-19.dev.api.carto.com';
 const connection = params.get('connection') || 'bigquery';
-// const table = params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.lines_300K_viz';
-const table =
-  params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.polygons_3k_usacounty';
+const table = params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.points_1M_viz';
 
-// const formatTiles = params.get('formatTiles') || 'geojson'; // mvt | geojson | binary
-const geomType = params.get('geomType') || 'polygons'; // points | lines | polygons
-//const token =
-//  'eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfZmt0MXdsbCIsImp0aSI6IjNmM2NlMjA3In0.zzfm2xZSAjcTlLxaPQHDy8uVJbGtEC5gItOg8U_gfP4';
+// Guess based on table name
+let geomType;
+if (table.includes('points')) geomType = 'points';
+else if (table.includes('lines')) geomType = 'lines';
+else if (table.includes('polygons')) geomType = 'polygons';
+
 const token =
   'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InlscXg0SVg3ek1oaUR1OFplSUlFSyJ9.eyJodHRwOi8vYXBwLmNhcnRvLmNvbS9lbWFpbCI6ImZwYWxtZXIrY2hyb21lQGNhcnRvZGIuY29tIiwiaHR0cDovL2FwcC5jYXJ0by5jb20vYWNjb3VudF9pZCI6ImFjX2ZrdDF3bGwiLCJpc3MiOiJodHRwczovL2F1dGguZGV2LmNhcnRvLmNvbS8iLCJzdWIiOiJhdXRoMHw2MWEwZDgyMGJkMDA3OTAwNzExNDViYTciLCJhdWQiOlsiY2FydG8tY2xvdWQtbmF0aXZlLWFwaSIsImh0dHBzOi8vY2FydG8tZGVkaWNhdGVkLWVudi51cy5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNjM4NDQxMDY0LCJleHAiOjE2Mzg1Mjc0NjQsImF6cCI6IkczcTdsMlVvTXpSWDhvc2htQXVzZWQwcGdRVldySkdQIiwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCByZWFkOmN1cnJlbnRfdXNlciB1cGRhdGU6Y3VycmVudF91c2VyIHJlYWQ6Y29ubmVjdGlvbnMgd3JpdGU6Y29ubmVjdGlvbnMgcmVhZDptYXBzIHdyaXRlOm1hcHMgcmVhZDphY2NvdW50IiwicGVybWlzc2lvbnMiOlsicmVhZDphY2NvdW50IiwicmVhZDphcHBzIiwicmVhZDpjb25uZWN0aW9ucyIsInJlYWQ6Y3VycmVudF91c2VyIiwicmVhZDppbXBvcnRzIiwicmVhZDpsaXN0ZWRfYXBwcyIsInJlYWQ6bWFwcyIsInJlYWQ6dGlsZXNldHMiLCJyZWFkOnRva2VucyIsInVwZGF0ZTpjdXJyZW50X3VzZXIiLCJ3cml0ZTphcHBzIiwid3JpdGU6Y29ubmVjdGlvbnMiLCJ3cml0ZTppbXBvcnRzIiwid3JpdGU6bWFwcyIsIndyaXRlOnRva2VucyJdfQ.GORlsUyCVJggGjJcq-56B_Va_lpD85HEgjFlRn-CSFdS_8oS1_znONGRGWfjheps4RvQKW6f7hZii07ZQOeTHgwbr9WyrFqubBXPN1uKBQIg2_uKEVV8ITaOgt5NJtDvSPWyehoO1Fh6k4HpLtseIhNRkwpcPLWG0zpORdr9e9vd3XpRTzbXwmEuuFLUH2T0RpR9ex6A3H62aV1HeVsEwcwnMr_Vy3gI6S73oCa_i2G4R5X1fYFesGfAf6-94Zm6ogUfuE423usp5ehakDDhsKm6KrbmgamBG3cX7ajlGwH2T_wwlRc30L7zd9mzbTJJGzFKsoNDfbT04c14GNFvQA';
 
@@ -42,9 +42,9 @@ const geojson = true;
 const wip = true;
 const showBasemap = true;
 const showTile = false;
-const showCBT = false;
+const showCBT = true;
 const showMVT = false;
-const showGeojson = true;
+const showGeojson = false;
 
 function Root() {
   const [binary, setBinary] = useState(false);
