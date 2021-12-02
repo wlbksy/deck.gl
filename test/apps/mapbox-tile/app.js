@@ -11,7 +11,10 @@ import {ClipExtension} from '@deck.gl/extensions';
 import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
 import {GeoJsonLayer, PathLayer, PointCloudLayer} from '@deck.gl/layers';
 import {getPolygonSignedArea} from '@math.gl/polygon';
-import {binaryToGeojson, geojsonToBinary} from '@loaders.gl/gis';
+import {MVTLoader} from '@loaders.gl/mvt';
+import {binaryToGeojson, geojsonToBinary, TEST_EXPORTS} from '@loaders.gl/gis';
+import {classifyRings, featuresToBinary} from '@loaders.gl/mvt';
+import {geojson} from './testdata.js';
 
 const INITIAL_VIEW_STATE = {longitude: -73.95643, latitude: 40.8039, zoom: 9};
 const COUNTRIES =
@@ -37,12 +40,13 @@ function buildUrl({formatTiles}) {
 
 const wip = true;
 const showBasemap = true;
-const showTile = true;
+const showTile = false;
 const showCBT = false;
 const showMVT = false;
+const showGeojson = true;
 
 function Root() {
-  const [binary, setBinary] = useState(true);
+  const [binary, setBinary] = useState(false);
   const [border, setBorder] = useState(true);
   const [clip, setClip] = useState(true);
   const [skipOdd, setSkipOdd] = useState(false);
@@ -57,11 +61,14 @@ function Root() {
           showBasemap && createBasemap(),
           showTile && createTile(opts),
           showCBT && createCBT(opts),
-          showMVT && createMVT(opts)
+          showMVT && createMVT(opts),
+          showGeojson && createGeojson(opts)
         ]}
       />
       <div style={{position: 'absolute', margin: 10}}>
-        {showTile && <Checkbox label="Binary" value={binary} onChange={() => setBinary(!binary)} />}
+        {(showTile || showGeojson) && (
+          <Checkbox label="Binary" value={binary} onChange={() => setBinary(!binary)} />
+        )}
         {showTile && <Checkbox label="Border" value={border} onChange={() => setBorder(!border)} />}
         <Checkbox label="Clip" value={clip} onChange={() => setClip(!clip)} />
         <Checkbox label="Skip Odd" value={skipOdd} onChange={() => setSkipOdd(!skipOdd)} />
@@ -108,6 +115,7 @@ function createTile({binary, border, clip, skipOdd}) {
     skipOdd,
 
     getTileData: tile => {
+      const {x, y, z} = tile;
       return Promise.all([
         fetch(wip ? tile.url.replace('binary', 'wip') : tile.url)
           .then(response => {
@@ -122,7 +130,25 @@ function createTile({binary, border, clip, skipOdd}) {
             return null;
           }
           return response.json();
-        })
+        }),
+        fetch(tile.url.replace('binary', 'mvt'))
+          .then(response => {
+            if (response.status === 204) {
+              return null;
+            }
+            return response.arrayBuffer();
+          })
+          .then(arrayBuffer => {
+            if (!arrayBuffer) return null;
+            return MVTLoader.parse(arrayBuffer, {
+              mimeType: 'application/x-protobuf',
+              mvt: {
+                coordinates: 'wgs84', //  'local',
+                tileIndex: {x, y, z}
+              },
+              gis: binary ? {format: 'binary'} : {}
+            });
+          })
       ]);
     },
     renderSubLayers: props => {
@@ -138,11 +164,15 @@ function createTile({binary, border, clip, skipOdd}) {
       // Convert data to binary
       const binaryData = props.data[0]; // <- Broken
       const geojsonData = props.data[1]; // <- Working
+      const mvtData = props.data[2]; // <- Working
 
-      const geojsonBinaryData = geojsonToBinary(geojsonData.features); // <- Broken
+      // Patch in byte length
+      binaryData.byteLength = mvtData.byteLength;
+
+      // const geojsonBinaryData = geojsonToBinary(geojsonData.features); // <- Broken
       // const binaryGeojsonData = binaryToGeojson(binaryData); // <- Working
       // const doubleConvertData = geojsonToBinary(binaryGeojsonData);
-      // const changes = detailedDiff(geojsonBinaryData, doubleConvertData);
+      const changes = detailedDiff(binaryData, mvtData);
 
       const tileProps = {
         // Data
@@ -257,7 +287,7 @@ CBTLayer.defaultProps = {...MVTLayer.defaultProps, loaders: [CBTLoader]};
 function createCBT({clip, skipOdd}) {
   return new CBTLayer({
     id: 'cbt',
-    data: buildUrl({formatTiles: 'binary'}),
+    data: buildUrl({formatTiles: wip ? 'wip' : 'binary'}),
 
     // Styling (same props as MVTLayer)
     getFillColor: [33, 171, 251],
@@ -282,6 +312,117 @@ function createMVT() {
   return new MVTLayer({
     id: 'mvt',
     data: buildUrl({formatTiles: 'mvt'}),
+    getFillColor: [232, 171, 0]
+  });
+}
+
+// Mimic output format of BVT
+function binarize(features, firstPassData) {
+  for (let feature of features) {
+    const {coordinates} = feature.geometry;
+    let data = [];
+    const lines = [];
+    for (const primitive of coordinates) {
+      lines.push(data.length);
+      data = data.concat(primitive.flat());
+    }
+
+    feature.geometry.data = data;
+    feature.geometry.lines = lines;
+    delete feature.geometry.coordinates;
+
+    _toBinaryCoordinates(feature, firstPassData);
+  }
+
+  return features;
+}
+
+function _toBinaryCoordinates(feature, firstPassData) {
+  // Expands the protobuf data to an intermediate `lines`
+  // data format, which maps closely to the binary data buffers.
+  // It is similar to GeoJSON, but rather than storing the coordinates
+  // in multidimensional arrays, we have a 1D `data` with all the
+  // coordinates, and then index into this using the `lines`
+  // parameter, e.g.
+  //
+  // geometry: {
+  //   type: 'Point', data: [1,2], lines: [0]
+  // }
+  // geometry: {
+  //   type: 'LineString', data: [1,2,3,4,...], lines: [0]
+  // }
+  // geometry: {
+  //   type: 'Polygon', data: [1,2,3,4,...], lines: [[0, 2]]
+  // }
+  // Thus the lines member lets us look up the relevant range
+  // from the data array.
+  // The Multi* versions of the above types share the same data
+  // structure, just with multiple elements in the lines array
+
+  let geom = feature.geometry;
+
+  const coordLength = 2;
+
+  // eslint-disable-next-line default-case
+  switch (geom.type) {
+    case 'Point': // Point
+      firstPassData.pointFeaturesCount++;
+      firstPassData.pointPositionsCount += geom.lines.length;
+      break;
+
+    case 'LineString': // LineString
+      firstPassData.lineFeaturesCount++;
+      firstPassData.linePathsCount += geom.lines.length;
+      firstPassData.linePositionsCount += geom.data.length / coordLength;
+      break;
+
+    case 'Polygon': // Polygon
+      const classified = classifyRings(geom);
+
+      // Unlike Point & LineString geom.lines is a 2D array, thanks
+      // to the classifyRings method
+      firstPassData.polygonFeaturesCount++;
+      firstPassData.polygonObjectsCount += classified.lines.length;
+
+      for (const lines of classified.lines) {
+        firstPassData.polygonRingsCount += lines.length;
+      }
+      firstPassData.polygonPositionsCount += classified.data.length / coordLength;
+
+      geom = classified;
+      break;
+  }
+
+  feature.geometry = {...feature.geometry, ...geom};
+}
+
+function geojsonToBinary2(features) {
+  const firstPassData = {
+    pointPositionsCount: 0,
+    pointFeaturesCount: 0,
+    linePositionsCount: 0,
+    linePathsCount: 0,
+    lineFeaturesCount: 0,
+    polygonPositionsCount: 0,
+    polygonObjectsCount: 0,
+    polygonRingsCount: 0,
+    polygonFeaturesCount: 0
+  };
+
+  const _features = JSON.parse(JSON.stringify(features));
+  const intermediateData = binarize(_features, firstPassData);
+  const binaryData = featuresToBinary(intermediateData, firstPassData);
+
+  return binaryData;
+}
+
+function createGeojson({binary}) {
+  return new GeoJsonLayer({
+    id: 'geojson',
+    data: binary ? geojsonToBinary2(geojson.features) : geojson,
+    stroked: true,
+    lineWidthMinPixels: 0.5,
+    getFillColor: [0, 171, 255],
     getFillColor: [232, 171, 0]
   });
 }
