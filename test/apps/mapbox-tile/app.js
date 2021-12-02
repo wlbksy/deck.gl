@@ -348,42 +348,38 @@ function binarizePolygon(coordinates, data, lines) {
 }
 
 // Mimic output format of BVT
-function binarize(features, firstPassData) {
-  for (let feature of features) {
-    const {geometry} = feature;
-    const {coordinates, type} = geometry;
-    const data = [];
-    const lines = [];
+function binarize(feature) {
+  const {geometry} = feature;
+  const {coordinates, type} = geometry;
+  const data = [];
+  const lines = [];
 
-    switch (type) {
-      case 'Point':
-        binarizePoint(coordinates, data, lines);
-        break;
-      case 'MultiPoint':
-        coordinates.map(c => binarizePoint(c, data, lines));
-        break;
-      case 'LineString':
-        binarizeLineString(coordinates, data, lines);
-        break;
-      case 'MultiLineString':
-        coordinates.map(c => binarizeLineString(c, data, lines));
-        break;
-      case 'Polygon':
-        binarizePolygon(coordinates, data, lines);
-        break;
-      case 'MultiPolygon':
-        coordinates.map(c => binarizePolygon(c, data, lines));
-        break;
-    }
-
-    geometry.data = data;
-    geometry.lines = lines;
-    delete geometry.coordinates;
-
-    _toBinaryCoordinates(feature, firstPassData);
+  switch (type) {
+    case 'Point':
+      binarizePoint(coordinates, data, lines);
+      break;
+    case 'MultiPoint':
+      coordinates.map(c => binarizePoint(c, data, lines));
+      break;
+    case 'LineString':
+      binarizeLineString(coordinates, data, lines);
+      break;
+    case 'MultiLineString':
+      coordinates.map(c => binarizeLineString(c, data, lines));
+      break;
+    case 'Polygon':
+      binarizePolygon(coordinates, data, lines);
+      break;
+    case 'MultiPolygon':
+      coordinates.map(c => binarizePolygon(c, data, lines));
+      break;
   }
 
-  return features;
+  geometry.data = data;
+  geometry.lines = lines;
+  delete geometry.coordinates;
+
+  return feature;
 }
 
 function _toBinaryCoordinates(feature, firstPassData) {
@@ -461,8 +457,16 @@ function geojsonToBinary2(features) {
     polygonFeaturesCount: 0
   };
 
+  // Make copy of data
   const _features = JSON.parse(JSON.stringify(features));
-  const intermediateData = binarize(_features, firstPassData);
+
+  // Convert to same format as parsed MVT buffers
+  const intermediateData = _features.map(binarize);
+
+  // Prepare for featuresToBinary
+  intermediateData.map(feature => _toBinaryCoordinates(feature, firstPassData));
+
+  // Final conversion
   const binaryData = featuresToBinary(intermediateData, firstPassData);
 
   return binaryData;
