@@ -21,7 +21,9 @@ const config = {
   },
 
   aliases: {
-    'deck.gl-test': resolve(__dirname, './test')
+    'deck.gl-test': resolve(__dirname, './test'),
+    '@loaders.gl/gis': resolve(__dirname, '../loaders.gl/modules/gis/dist'),
+    '@loaders.gl/mvt': resolve(__dirname, '../loaders.gl/modules/mvt/dist')
   },
 
   browserTest: {
