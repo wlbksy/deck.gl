@@ -12,8 +12,7 @@ import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
 import {GeoJsonLayer, PathLayer, PointCloudLayer} from '@deck.gl/layers';
 import {getPolygonSignedArea} from '@math.gl/polygon';
 import {MVTLoader} from '@loaders.gl/mvt';
-import {binaryToGeojson, geojsonToBinary, TEST_EXPORTS} from '@loaders.gl/gis';
-import {classifyRings, featuresToBinary} from '@loaders.gl/mvt';
+import {binaryToGeojson, geojsonToBinary, geojsonToBinaryOld} from '@loaders.gl/gis';
 import {testdata, correct, multipolygon} from './testdata.js';
 
 const INITIAL_VIEW_STATE = {longitude: -73.95643, latitude: 40.8039, zoom: 9};
@@ -42,9 +41,9 @@ const geojson = true;
 const wip = true;
 const showBasemap = true;
 const showTile = false;
-const showCBT = true;
+const showCBT = false;
 const showMVT = false;
-const showGeojson = false;
+const showGeojson = true;
 
 function Root() {
   const [binary, setBinary] = useState(false);
@@ -241,7 +240,7 @@ const parseJSON = arrayBuffer => {
 
 const parseCBT = (arrayBuffer, options) => {
   if (!arrayBuffer) return null;
-  if (geojson) return geojsonToBinary2(parseJSON(arrayBuffer).features);
+  if (geojson) return geojsonToBinary(parseJSON(arrayBuffer).features);
   const tile = wip ? parseJSON(arrayBuffer) : parsePbf(arrayBuffer);
   const binary = tileToBinary(tile);
   return binary;
@@ -320,159 +319,10 @@ function createMVT() {
   });
 }
 
-function binarizePoint(coordinates, data, lines) {
-  lines.push(data.length);
-  data.push(...coordinates);
-}
-
-function binarizeLineString(coordinates, data, lines) {
-  lines.push(data.length);
-  data.push(...coordinates.flat());
-}
-
-function binarizePolygon(coordinates, data, lines) {
-  let i = 0;
-  let ccw;
-  if (coordinates.length > 1) {
-    // Check holes for correct winding
-    ccw = getPolygonSignedArea(coordinates[0].flat()) < 0;
-  }
-  for (const lineString of coordinates) {
-    if (i > 0 && ccw === getPolygonSignedArea(lineString.flat()) < 0) {
-      // If winding is the same of outer ring, need to reverse
-      lineString.reverse();
-    }
-    binarizeLineString(lineString, data, lines);
-    i++;
-  }
-}
-
-// Mimic output format of BVT
-function binarize(feature) {
-  const {geometry} = feature;
-  let {coordinates} = geometry;
-  const data = [];
-  const lines = [];
-
-  switch (geometry.type) {
-    case 'Point':
-      coordinates = [coordinates];
-    case 'MultiPoint':
-      coordinates.map(c => binarizePoint(c, data, lines));
-      break;
-    case 'LineString':
-      coordinates = [coordinates];
-    case 'MultiLineString':
-      coordinates.map(c => binarizeLineString(c, data, lines));
-      break;
-    case 'Polygon':
-      coordinates = [coordinates];
-    case 'MultiPolygon':
-      coordinates.map(c => binarizePolygon(c, data, lines));
-      break;
-  }
-
-  geometry.data = data;
-  geometry.lines = lines;
-  delete geometry.coordinates;
-
-  return feature;
-}
-
-function _toBinaryCoordinates(feature, firstPassData) {
-  // Expands the protobuf data to an intermediate `lines`
-  // data format, which maps closely to the binary data buffers.
-  // It is similar to GeoJSON, but rather than storing the coordinates
-  // in multidimensional arrays, we have a 1D `data` with all the
-  // coordinates, and then index into this using the `lines`
-  // parameter, e.g.
-  //
-  // geometry: {
-  //   type: 'Point', data: [1,2], lines: [0]
-  // }
-  // geometry: {
-  //   type: 'LineString', data: [1,2,3,4,...], lines: [0]
-  // }
-  // geometry: {
-  //   type: 'Polygon', data: [1,2,3,4,...], lines: [[0, 2]]
-  // }
-  // Thus the lines member lets us look up the relevant range
-  // from the data array.
-  // The Multi* versions of the above types share the same data
-  // structure, just with multiple elements in the lines array
-
-  let geom = feature.geometry;
-
-  const coordLength = 2;
-
-  // eslint-disable-next-line default-case
-  switch (geom.type) {
-    case 'Point': // Point
-    case 'MultiPoint': // Point
-      firstPassData.pointFeaturesCount++;
-      firstPassData.pointPositionsCount += geom.lines.length;
-      break;
-
-    case 'LineString': // LineString
-    case 'MultiLineString': // LineString
-      firstPassData.lineFeaturesCount++;
-      firstPassData.linePathsCount += geom.lines.length;
-      firstPassData.linePositionsCount += geom.data.length / coordLength;
-      break;
-
-    case 'Polygon': // Polygon
-    case 'MultiPolygon': // Polygon
-      const classified = classifyRings(geom);
-
-      // Unlike Point & LineString geom.lines is a 2D array, thanks
-      // to the classifyRings method
-      firstPassData.polygonFeaturesCount++;
-      firstPassData.polygonObjectsCount += classified.lines.length;
-
-      for (const lines of classified.lines) {
-        firstPassData.polygonRingsCount += lines.length;
-      }
-      firstPassData.polygonPositionsCount += classified.data.length / coordLength;
-
-      geom = classified;
-      break;
-  }
-
-  feature.geometry = {...feature.geometry, ...geom};
-}
-
-function geojsonToBinary2(features) {
-  const firstPassData = {
-    pointPositionsCount: 0,
-    pointFeaturesCount: 0,
-    linePositionsCount: 0,
-    linePathsCount: 0,
-    lineFeaturesCount: 0,
-    polygonPositionsCount: 0,
-    polygonObjectsCount: 0,
-    polygonRingsCount: 0,
-    polygonFeaturesCount: 0
-  };
-
-  // Make copy of data
-  const _features = JSON.parse(JSON.stringify(features));
-
-  // Convert to same format as parsed MVT buffers
-  const intermediateData = _features.map(binarize);
-
-  // Prepare for featuresToBinary
-  intermediateData.map(feature => _toBinaryCoordinates(feature, firstPassData));
-
-  // Final conversion
-  const binaryData = featuresToBinary(intermediateData, firstPassData);
-
-  return binaryData;
-}
-
 function createGeojson({binary}) {
   return new GeoJsonLayer({
     id: 'geojson',
-    data: binary ? geojsonToBinary2(multipolygon.features) : multipolygon,
+    data: binary ? geojsonToBinary(multipolygon.features) : multipolygon,
     stroked: true,
     lineWidthMinPixels: 0.5,
     getFillColor: [0, 171, 255],
