@@ -12,7 +12,7 @@ import {MVTLayer, TileLayer} from '@deck.gl/geo-layers';
 import {GeoJsonLayer, PathLayer, PointCloudLayer} from '@deck.gl/layers';
 import {getPolygonSignedArea} from '@math.gl/polygon';
 import {MVTLoader} from '@loaders.gl/mvt';
-import {binaryToGeojson, geojsonToBinary, geojsonToBinaryOld} from '@loaders.gl/gis';
+import {binaryToGeojson, geojsonToBinary} from '@loaders.gl/gis';
 import {testdata, correct, multipolygon} from './testdata.js';
 
 const INITIAL_VIEW_STATE = {longitude: -73.95643, latitude: 40.8039, zoom: 9};
@@ -20,9 +20,9 @@ const COUNTRIES =
   'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_50m_admin_0_scale_rank.geojson';
 
 const params = new URLSearchParams(location.search.slice(1));
-const apiBaseUrl = 'https://direct-gcp-us-east1-19.dev.api.carto.com';
+const apiBaseUrl = 'https://direct-gcp-us-east1.api.carto.com';
 const connection = params.get('connection') || 'bigquery';
-const table = params.get('table') || 'cartodb-gcp-backend-data-team.dynamic_tiling.points_1M_viz';
+const table = params.get('table') || 'cartobq.testtables.points_100k';
 
 // Guess based on table name
 let geomType;
@@ -41,9 +41,9 @@ const geojson = true;
 const wip = true;
 const showBasemap = true;
 const showTile = false;
-const showCBT = false;
+const showCBT = true;
 const showMVT = false;
-const showGeojson = true;
+const showGeojson = false;
 
 function Root() {
   const [binary, setBinary] = useState(false);
