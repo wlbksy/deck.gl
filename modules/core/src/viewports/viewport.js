@@ -288,10 +288,16 @@ export default class Viewport {
 
   // INTERNAL METHODS
 
-  _createProjectionMatrix({orthographic, fovyRadians, aspect, focalDistance, near, far}) {
-    return orthographic
+  _createProjectionMatrix({orthographic, fovyRadians, aspect, focalDistance, offset, near, far}) {
+    const matrix = orthographic
       ? new Matrix4().orthographic({fovy: fovyRadians, aspect, focalDistance, near, far})
       : new Matrix4().perspective({fovy: fovyRadians, aspect, near, far});
+    if (offset) {
+      // pixels to clip space
+      matrix[8] -= (offset[0] * 2) / this.width;
+      matrix[9] += (offset[1] * 2) / this.height;
+    }
+    return matrix;
   }
 
   /* eslint-disable complexity, max-statements */
@@ -387,6 +393,7 @@ export default class Viewport {
       fovy = 75,
       near = 0.1, // Distance of near clipping plane
       far = 1000, // Distance of far clipping plane
+      offset = null, // Center offset in pixels
       focalDistance = 1
     } = opts;
 
@@ -397,6 +404,7 @@ export default class Viewport {
         fovyRadians: fovyRadians || fovy * DEGREES_TO_RADIANS,
         aspect: this.width / this.height,
         focalDistance,
+        offset,
         near,
         far
       });

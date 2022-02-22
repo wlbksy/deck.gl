@@ -8,16 +8,27 @@ import OrthographicController from '../controllers/orthographic-controller';
 
 const viewMatrix = new Matrix4().lookAt({eye: [0, 0, 1]});
 
-function getProjectionMatrix({width, height, near, far}) {
+function getProjectionMatrix({width, height, near, far, offset}) {
   // Make sure Matrix4.ortho doesn't crash on 0 width/height
   width = width || 1;
   height = height || 1;
 
+  let left = -width / 2;
+  let right = width / 2;
+  let bottom = -height / 2;
+  let top = height / 2;
+  if (offset) {
+    left -= offset[0];
+    right -= offset[0];
+    bottom += offset[1];
+    top += offset[1];
+  }
+
   return new Matrix4().ortho({
-    left: -width / 2,
-    right: width / 2,
-    bottom: -height / 2,
-    top: height / 2,
+    left,
+    right,
+    bottom,
+    top,
     near,
     far
   });
@@ -32,6 +43,7 @@ class OrthographicViewport extends Viewport {
       far = 1000,
       zoom = 0,
       target = [0, 0, 0],
+      offset = null,
       flipY = true
     } = props;
     const zoomX = Array.isArray(zoom) ? zoom[0] : zoom;
@@ -57,7 +69,7 @@ class OrthographicViewport extends Viewport {
       longitude: null,
       position: target,
       viewMatrix: viewMatrix.clone().scale([scale, scale * (flipY ? -1 : 1), scale]),
-      projectionMatrix: getProjectionMatrix({width, height, near, far}),
+      projectionMatrix: getProjectionMatrix({width, height, offset, near, far}),
       zoom: zoom_,
       distanceScales
     });
