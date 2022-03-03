@@ -17,6 +17,214 @@ import {ColumnLayer, PolygonLayer} from '@deck.gl/layers';
 // distortion." Smaller value makes the column layer more sensitive to viewport change.
 const UPDATE_THRESHOLD_KM = 10;
 
+const h3_face_5_lat = 9.897578191520505;
+const h3_face_5_lng = 96.15073392959359;
+
+const h3_face_5_lat_rad = deg2rad(h3_face_5_lat);
+const h3_face_5_lng_rad = deg2rad(h3_face_5_lng);
+
+const M_EYE = [
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1]
+];
+
+let R_h3_to_amap = [
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1]
+];
+const R_amap_to_h3 = [
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1]
+];
+
+function deg2rad(d) {
+  return (d / 180) * Math.PI;
+}
+
+function rad2deg(r) {
+  return (r * 180) / Math.PI;
+}
+
+function matrix_mul_vector(m, v) {
+  const res = [0, 0, 0];
+  for (let i = 0; i < 3; ++i) {
+    let t = 0;
+    for (let j = 0; j < 3; ++j) {
+      t += m[i][j] * v[j];
+    }
+    res[i] = t;
+  }
+  return res;
+}
+
+function matrix_mul_matrix(a, b) {
+  const res = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0]
+  ];
+  for (let i = 0; i < 3; ++i) {
+    for (let k = 0; k < 3; ++k) {
+      let t = 0;
+      for (let j = 0; j < 3; ++j) {
+        t += a[i][j] * b[j][k];
+        res[i][k] = t;
+      }
+    }
+  }
+  return res;
+}
+
+function scale_matrix(s, m) {
+  const res = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0]
+  ];
+  for (let i = 0; i < 3; ++i) {
+    for (let j = 0; j < 3; ++j) {
+      res[i][j] = s * m[i][j];
+    }
+  }
+  return res;
+}
+
+function matrix_add_matrix(a, b) {
+  const res = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0]
+  ];
+  for (let i = 0; i < 3; ++i) {
+    for (let j = 0; j < 3; ++j) {
+      res[i][j] = a[i][j] + b[i][j];
+    }
+  }
+  return res;
+}
+
+function latlngToXyz(p) {
+  // p: [lat, lng]
+  const lat_rad = deg2rad(p[0]);
+  const lng_rad = deg2rad(p[1]);
+
+  const r = Math.cos(lat_rad);
+  const z = Math.sin(lat_rad);
+  const x = Math.cos(lng_rad) * r;
+  const y = Math.sin(lng_rad) * r;
+  return [x, y, z];
+}
+
+function xyzToLatlng(p) {
+  const lat_rad = Math.asin(p[2]);
+  const lng_rad = Math.atan2(p[1], p[0]);
+
+  const lat = rad2deg(lat_rad);
+  const lng = rad2deg(lng_rad);
+
+  return [lat, lng];
+}
+
+function rotate_point(p, m) {
+  const h3_xyz = latlngToXyz(p);
+  const amap_xyz = matrix_mul_vector(m, h3_xyz);
+  return xyzToLatlng(amap_xyz);
+}
+
+function amapGeoToH3Geo(p) {
+  return rotate_point(p, R_amap_to_h3);
+}
+function h3GeoToAmapGeo(p) {
+  return rotate_point(p, R_h3_to_amap);
+}
+
+function reverse_geo(p) {
+  return [p[1], p[0]];
+}
+
+function idToPolygonRotated(hexId) {
+  const origin_vertices = h3ToGeoBoundary(hexId, true);
+  return origin_vertices.map(reverse_geo).map(h3GeoToAmapGeo).map(reverse_geo);
+}
+
+function idToCenterRotated(hexId) {
+  const p = h3ToGeo(hexId);
+  return h3GeoToAmapGeo(p);
+}
+
+function centerToIdRotated(lat, lng, resolution) {
+  const p = amapGeoToH3Geo([lat, lng]);
+  return geoToH3(p[0], p[1], resolution);
+}
+
+function skew(geolatlng) {
+  const [x, y, z] = latlngToXyz(geolatlng);
+  return [
+    [0, -z, y],
+    [z, 0, -x],
+    [-y, x, 0]
+  ];
+}
+
+function rotation_axis_angle(g, r) {
+  const K = skew(g);
+  const s = Math.sin(r);
+  const c = Math.cos(r);
+
+  const m1 = scale_matrix(s, K);
+  const m2 = matrix_mul_matrix(K, K);
+  const m3 = scale_matrix(1 - c, m2);
+  const m4 = matrix_add_matrix(m1, m3);
+  const m5 = matrix_add_matrix(M_EYE, m4);
+
+  return m5;
+}
+
+function rotation3D_x(r) {
+  const c = Math.cos(r);
+  const s = Math.sin(r);
+  return [
+    [1.0, 0.0, 0.0],
+    [0.0, c, -s],
+    [0.0, s, c]
+  ];
+}
+
+function rotation3D_z(r) {
+  const c = Math.cos(r);
+  const s = Math.sin(r);
+  return [
+    [c, -s, 0.0],
+    [s, c, 0.0],
+    [0.0, 0.0, 1.0]
+  ];
+}
+
+function reset_by_centroid_and_azimuth(centroid_lat, centroid_lng, azimuth) {
+  const centroid_lat_rad = deg2rad(centroid_lat);
+  const centroid_lng_rad = deg2rad(centroid_lng);
+
+  const x_angle = centroid_lat_rad - h3_face_5_lat_rad;
+  const z_angle = centroid_lng_rad - h3_face_5_lng_rad;
+
+  const m1 = rotation_axis_angle([centroid_lat, centroid_lng], deg2rad(azimuth));
+  const m2 = rotation3D_z(z_angle);
+  const m3 = rotation3D_x(x_angle);
+
+  const m4 = matrix_mul_matrix(m1, m2);
+  const R = matrix_mul_matrix(m4, m3);
+
+  R_h3_to_amap = R;
+  for (let i = 0; i < 3; ++i) {
+    for (let j = 0; j < 3; ++j) {
+      R_amap_to_h3[i][j] = R[j][i];
+    }
+  }
+}
+
 // normalize longitudes w.r.t center (refLng), when not provided first vertex
 export function normalizeLongitudes(vertices, refLng) {
   refLng = refLng === undefined ? vertices[0][0] : refLng;
@@ -32,7 +240,7 @@ export function normalizeLongitudes(vertices, refLng) {
 
 // scale polygon vertices w.r.t center (hexId)
 export function scalePolygon(hexId, vertices, factor) {
-  const [lat, lng] = h3ToGeo(hexId);
+  const [lat, lng] = idToCenterRotated(hexId);
   const actualCount = vertices.length;
 
   // normalize with respect to center
@@ -49,12 +257,12 @@ export function scalePolygon(hexId, vertices, factor) {
 
 function getHexagonCentroid(getHexagon, object, objectInfo) {
   const hexagonId = getHexagon(object, objectInfo);
-  const [lat, lng] = h3ToGeo(hexagonId);
+  const [lat, lng] = idToCenterRotated(hexagonId);
   return [lng, lat];
 }
 
 function h3ToPolygon(hexId, coverage = 1, flatten) {
-  const vertices = h3ToGeoBoundary(hexId, true);
+  const vertices = idToPolygonRotated(hexId);
 
   if (coverage !== 1) {
     // scale and normalize vertices w.r.t to center
@@ -185,7 +393,8 @@ export default class H3HexagonLayer extends CompositeLayer {
       return;
     }
     const hex =
-      this.props.centerHexagon || geoToH3(viewport.latitude, viewport.longitude, resolution);
+      this.props.centerHexagon ||
+      centerToIdRotated(viewport.latitude, viewport.longitude, resolution);
     if (centerHex === hex) {
       return;
     }
@@ -201,7 +410,7 @@ export default class H3HexagonLayer extends CompositeLayer {
     const {unitsPerMeter} = viewport.distanceScales;
 
     let vertices = h3ToPolygon(hex);
-    const [centerLat, centerLng] = h3ToGeo(hex);
+    const [centerLat, centerLng] = idToCenterRotated(hex);
 
     const [centerX, centerY] = viewport.projectFlat([centerLng, centerLat]);
     vertices = vertices.map(p => {
@@ -216,6 +425,7 @@ export default class H3HexagonLayer extends CompositeLayer {
   }
 
   renderLayers() {
+    reset_by_centroid_and_azimuth(32.1285602329, 114.0831041336, 30);
     return this._shouldUseHighPrecision() ? this._renderPolygonLayer() : this._renderColumnLayer();
   }
 
