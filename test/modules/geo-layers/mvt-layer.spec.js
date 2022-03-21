@@ -242,7 +242,7 @@ test('MVTLayer#transformCoordsToWGS84', t => {
 test('MVTLayer#autoHighlight', async t => {
   class TestMVTLayer extends MVTLayer {
     getTileData() {
-      return this.props.binary ? geoJSONBinaryData : geoJSONData;
+      return this.state.binary ? geoJSONBinaryData : geoJSONData;
     }
   }
 
@@ -300,7 +300,7 @@ for (const binary of [true, false]) {
   test(`MVTLayer#picking binary:${binary}`, async t => {
     class TestMVTLayer extends MVTLayer {
       getTileData() {
-        return this.props.binary ? geoJSONBinaryData : geoJSONData;
+        return this.state.binary ? geoJSONBinaryData : geoJSONData;
       }
     }
 
@@ -425,7 +425,7 @@ test('MVTLayer#TileJSON', async t => {
 test('MVTLayer#dataInWGS84', async t => {
   class TestMVTLayer extends MVTLayer {
     getTileData() {
-      return this.props.binary ? geoJSONBinaryData : geoJSONData;
+      return this.state.binary ? geoJSONBinaryData : geoJSONData;
     }
   }
 
@@ -495,7 +495,7 @@ test('MVTLayer#triangulation', async t => {
     }
     const geoJsonLayer = layer.internalState.subLayers[0];
     const data = geoJsonLayer.props.data;
-    if (layer.props.binary) {
+    if (layer.state.binary) {
       // Triangulated binary data should be passed
       t.ok(data.polygons.triangles, 'should triangulate');
     } else {
@@ -675,6 +675,56 @@ test('findIndexBinary', t => {
   t.is(findIndexBinary(testData, 'stringId', 'A'), 1, 'Find by string id');
   t.is(findIndexBinary(testData, 'stringId', 'B'), 0, 'Find by string id');
   t.is(findIndexBinary(testData, 'stringId', 'B', 'road'), 2, 'Find by string id with layer name');
+
+  t.end();
+});
+
+test('MVTLayer#GeoJsonLayer.defaultProps', t => {
+  let didDraw = false;
+  class TestMVTLayer extends MVTLayer {
+    initializeState() {}
+
+    renderLayers() {
+      didDraw = true;
+    }
+  }
+
+  const onBeforeUpdate = () => (didDraw = false);
+  const testCases = [
+    {
+      title: 'GeoJsonLayer#shallow update',
+      props: {
+        id: 'testLayer',
+        data: [],
+        getTileData: () => {}, // TileLayer prop
+        getFillColor: () => [128, 0, 0, 255] // GeoJsonLayer prop
+      },
+      onBeforeUpdate,
+      onAfterUpdate: ({layer, subLayers}) => {
+        t.ok(didDraw, 'should draw layer');
+      }
+    },
+    {
+      updateProps: {
+        getTileData: () => {}
+      },
+      onBeforeUpdate,
+      onAfterUpdate: ({layer, subLayers}) => {
+        t.notOk(didDraw, 'should not update after shallow TileLayer accessor update');
+      }
+    },
+    {
+      updateProps: {
+        getFillColor: () => [128, 0, 0, 255]
+      },
+      onBeforeUpdate,
+      onAfterUpdate: ({layer, subLayers}) => {
+        t.notOk(didDraw, 'should not update after shallow GeoJsonLayer accessor update');
+      }
+    }
+  ];
+
+  testLayer({Layer: TestMVTLayer, testCases, onError: t.notOk});
 
   t.end();
 });

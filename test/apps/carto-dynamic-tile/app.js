@@ -44,23 +44,56 @@ const config = {
     zipcodes: 'carto_backend_data_team.dynamic_tiling.usa_zcta5_2019',
     h3: 'carto_backend_data_team.dynamic_tiling.usa_h3res8_v1',
     block: 'carto_backend_data_team.dynamic_tiling.usa_block_2019'
+  },
+  postgres: {
+    points_1M: 'demo.demo_tables.points_1m',
+    points_5M: 'demo.demo_tables.points_5m',
+    points_10M: 'demo.demo_tables.points_10m',
+    censustract: 'demo.demo_tables.usa_censustract_2019',
+    blockgroup: 'demo.demo_tables.usa_blockgroup_2019',
+    zipcodes: 'demo.demo_tables.usa_zcta5_2019',
+    county: 'demo.demo_tables.usa_county_2019',
+    block: 'demo.demo_tables.usa_block_2019'
   }
 };
 
-const connection = 'redshift';
-const table = config[connection]['zipcodes'];
 const accessToken = 'XXXX';
 
 const showBasemap = true;
 const showCarto = true;
 
 function Root() {
+  const [connection, setConnection] = useState('bigquery');
+  const [dataset, setDataset] = useState('points_1M');
+  const [formatTiles, setFormatTiles] = useState(TILE_FORMATS.BINARY);
+  const table = config[connection][dataset];
   return (
     <>
       <DeckGL
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
-        layers={[showBasemap && createBasemap(), showCarto && createCarto()]}
+        layers={[
+          showBasemap && createBasemap(),
+          showCarto && createCarto(connection, formatTiles, table)
+        ]}
+      />
+      <ObjectSelect
+        title="formatTiles"
+        obj={TILE_FORMATS}
+        value={formatTiles}
+        onSelect={setFormatTiles}
+      />
+      <ObjectSelect
+        title="connection"
+        obj={Object.keys(config)}
+        value={connection}
+        onSelect={setConnection}
+      />
+      <ObjectSelect
+        title="dataset"
+        obj={Object.keys(config[connection])}
+        value={dataset}
+        onSelect={setDataset}
       />
     </>
   );
@@ -80,7 +113,7 @@ function createBasemap() {
   });
 }
 
-function createCarto() {
+function createCarto(connection, formatTiles, table) {
   return new CartoLayer({
     id: 'carto',
     connection,
@@ -90,6 +123,7 @@ function createCarto() {
     // Dynamic tiling. Request TILEJSON format with TABLE
     type: MAP_TYPES.TABLE,
     format: FORMATS.TILEJSON,
+    formatTiles,
 
     // Styling
     getFillColor: [233, 71, 251],
@@ -103,6 +137,27 @@ function createCarto() {
     getPointRadius: 1.5,
     getLineColor: [0, 0, 200]
   });
+}
+
+function ObjectSelect({title, obj, value, onSelect}) {
+  const keys = Object.values(obj).sort();
+  return (
+    <>
+      <select
+        onChange={e => onSelect(e.target.value)}
+        style={{position: 'relative', padding: 4, margin: 2, width: 200}}
+        value={value}
+      >
+        <option hidden>{title}</option>
+        {keys.map(f => (
+          <option key={f} value={f}>
+            {`${title}: ${f}`}
+          </option>
+        ))}
+      </select>
+      <br></br>
+    </>
+  );
 }
 
 render(<Root />, document.body.appendChild(document.createElement('div')));
